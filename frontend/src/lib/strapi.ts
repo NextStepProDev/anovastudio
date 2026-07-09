@@ -45,25 +45,30 @@ export function strapiMediaUrl(path: string): string {
   return `${STRAPI_URL}${path}`;
 }
 
-export async function getStaff(): Promise<StaffMember[]> {
-  const res = await fetch(
-    `${STRAPI_URL}/api/staffs?populate=photo&sort=order:asc`,
-    { next: { revalidate: 60 } },
-  );
-  if (!res.ok) {
-    throw new Error(`Strapi request failed: ${res.status}`);
+/**
+ * Fetch a Strapi collection; returns [] when the backend is unreachable
+ * (e.g. during CI builds) so pages render their empty states instead of failing.
+ */
+async function fetchCollection<T>(path: string): Promise<T[]> {
+  try {
+    const res = await fetch(`${STRAPI_URL}${path}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) {
+      throw new Error(`Strapi request failed: ${res.status}`);
+    }
+    const json: StrapiListResponse<T> = await res.json();
+    return json.data;
+  } catch (error) {
+    console.warn(`Strapi unreachable (${path}), rendering empty:`, error);
+    return [];
   }
-  const json: StrapiListResponse<StaffMember> = await res.json();
-  return json.data;
 }
 
-export async function getServices(): Promise<Service[]> {
-  const res = await fetch(`${STRAPI_URL}/api/services?sort=order:asc`, {
-    next: { revalidate: 60 },
-  });
-  if (!res.ok) {
-    throw new Error(`Strapi request failed: ${res.status}`);
-  }
-  const json: StrapiListResponse<Service> = await res.json();
-  return json.data;
+export function getStaff(): Promise<StaffMember[]> {
+  return fetchCollection<StaffMember>("/api/staffs?populate=photo&sort=order:asc");
+}
+
+export function getServices(): Promise<Service[]> {
+  return fetchCollection<Service>("/api/services?sort=order:asc");
 }
