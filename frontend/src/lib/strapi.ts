@@ -36,8 +36,18 @@ export interface Service {
   order: number;
 }
 
+interface Gallery {
+  id: number;
+  documentId: string;
+  photos: StrapiImage[] | null;
+}
+
 interface StrapiListResponse<T> {
   data: T[];
+}
+
+interface StrapiSingleResponse<T> {
+  data: T | null;
 }
 
 /** Prefix a Strapi-relative upload path (e.g. /uploads/x.jpg) with the backend URL. */
@@ -63,6 +73,31 @@ async function fetchCollection<T>(path: string): Promise<T[]> {
     console.warn(`Strapi unreachable (${path}), rendering empty:`, error);
     return [];
   }
+}
+
+/**
+ * Fetch a Strapi single type; returns null when the backend is unreachable
+ * or the entry hasn't been created/published yet.
+ */
+async function fetchSingle<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${STRAPI_URL}${path}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) {
+      throw new Error(`Strapi request failed: ${res.status}`);
+    }
+    const json: StrapiSingleResponse<T> = await res.json();
+    return json.data;
+  } catch (error) {
+    console.warn(`Strapi unreachable (${path}), rendering empty:`, error);
+    return null;
+  }
+}
+
+export async function getGalleryPhotos(): Promise<StrapiImage[]> {
+  const gallery = await fetchSingle<Gallery>("/api/gallery?populate=photos");
+  return gallery?.photos ?? [];
 }
 
 export function getStaff(): Promise<StaffMember[]> {
