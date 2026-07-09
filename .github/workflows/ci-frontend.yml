@@ -68,6 +68,10 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: frontend
+          # SITE_URL is a repository variable, set once the real domain exists;
+          # bakes the base URL for sitemap/robots/canonicals into the image.
+          build-args: |
+            NEXT_PUBLIC_SITE_URL=${{ vars.SITE_URL || 'http://localhost:3000' }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

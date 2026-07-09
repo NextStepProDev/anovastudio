@@ -5,3 +5,8 @@ node_modules/
 # private notes
 pytania.md
 CLAUDE.md
+
+# deploy artifacts that live only on the server
+deploy/.env
+deploy/certs/
+deploy/certbot-www/

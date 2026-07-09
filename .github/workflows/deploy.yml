@@ -1,0 +1,137 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Optional image tag override (e.g. main, sha-abc1234). Leave blank to deploy the pinned version from the repo VERSION file.
+        required: false
+        default: ''
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Resolve deploy version
+        id: version
+        run: |
+          # Single source of truth: the repo VERSION file. The optional workflow input
+          # only overrides it for ad-hoc deploys (e.g. deploying a specific sha- tag).
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          elif [ -f VERSION ]; then
+            VERSION=$(cat VERSION)
+          else
+            echo "ERROR: no version input and no VERSION file found." >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying version: $VERSION"
+
+      - name: Encode docker-compose.prod.yml
+        id: compose
+        run: echo "content=$(base64 -w 0 deploy/docker-compose.prod.yml)" >> $GITHUB_OUTPUT
+
+      - name: Encode nginx.conf
+        id: nginx
+        run: echo "content=$(base64 -w 0 deploy/nginx.conf)" >> $GITHUB_OUTPUT
+
+      - name: Encode setup-swap.sh
+        id: swap
+        run: echo "content=$(base64 -w 0 deploy/setup-swap.sh)" >> $GITHUB_OUTPUT
+
+      - name: Deploy to production VM
+        uses: appleboy/ssh-action@v1
+        env:
+          COMPOSE_B64: ${{ steps.compose.outputs.content }}
+          NGINX_B64: ${{ steps.nginx.outputs.content }}
+          SWAP_B64: ${{ steps.swap.outputs.content }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: COMPOSE_B64,NGINX_B64,SWAP_B64
+          script: |
+            echo "$COMPOSE_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/docker-compose.prod.yml
+            echo "$NGINX_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/nginx.conf
+            # Ensure swap exists before starting memory-hungry containers (idempotent).
+            echo "$SWAP_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/setup-swap.sh
+            sudo -n bash ${{ secrets.DEPLOY_PATH }}/setup-swap.sh || echo "WARN: swap setup skipped/failed (check passwordless sudo)"
+            cd ${{ secrets.DEPLOY_PATH }}
+            export VERSION=${{ steps.version.outputs.version }}
+            # Persist the resolved version into the host .env so a later MANUAL
+            # `docker compose pull/up -d` on the box uses the same tag instead of a
+            # stale pin.
+            if grep -q '^VERSION=' .env; then
+              sed -i "s/^VERSION=.*/VERSION=${VERSION}/" .env
+            else
+              echo "VERSION=${VERSION}" >> .env
+            fi
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+            # nginx.conf is bind-mounted from the host, so up -d alone won't reload
+            # it when the image tag is unchanged. Validate and hot-reload explicitly.
+            docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
+            docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
+
+      - name: Verify deployment health
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            echo "Waiting for containers to become healthy..."
+            for i in $(seq 1 16); do
+              STRAPI=$(docker inspect --format='{{.State.Health.Status}}' fizjo-strapi-prod 2>/dev/null || echo "missing")
+              FRONT=$(docker inspect --format='{{.State.Health.Status}}' fizjo-frontend-prod 2>/dev/null || echo "missing")
+              echo "Attempt $i/16: strapi = $STRAPI, frontend = $FRONT"
+              if [ "$STRAPI" = "healthy" ] && [ "$FRONT" = "healthy" ]; then
+                echo "Deployment verified successfully."
+                exit 0
+              fi
+              sleep 15
+            done
+            echo "ERROR: containers did not become healthy within 4 minutes."
+            docker logs --tail 80 fizjo-strapi-prod || true
+            docker logs --tail 80 fizjo-frontend-prod || true
+            exit 1
+
+      - name: Smoke test public endpoints
+        # Requires the SITE_URL and STRAPI_URL repository variables (set once the
+        # domain exists); skipped until then.
+        if: vars.SITE_URL != ''
+        run: |
+          declare -A CHECKS=(
+            ["${{ vars.SITE_URL }}/"]=200
+            ["${{ vars.SITE_URL }}/oferta"]=200
+            ["${{ vars.SITE_URL }}/galeria"]=200
+            ["${{ vars.SITE_URL }}/kontakt"]=200
+            ["${{ vars.STRAPI_URL }}/api/services"]=200
+            ["${{ vars.STRAPI_URL }}/api/gallery"]=200
+          )
+          FAILED=0
+          for url in "${!CHECKS[@]}"; do
+            WANT="${CHECKS[$url]}"
+            CODE="000"
+            for attempt in 1 2 3; do
+              CODE=$(curl -sS -m 15 -o /dev/null -w "%{http_code}" "$url" || echo "000")
+              [ "$CODE" = "$WANT" ] && break
+              echo "  ${url} -> HTTP ${CODE} (attempt ${attempt}/3), retrying in 5s..."
+              sleep 5
+            done
+            if [ "$CODE" = "$WANT" ]; then
+              echo "OK   HTTP ${CODE}  ${url}"
+            else
+              echo "FAIL HTTP ${CODE} (want ${WANT})  ${url}"
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -ne 0 ]; then
+            echo "ERROR: one or more public endpoints failed — deploy is unhealthy."
+            exit 1
+          fi
+          echo "Smoke test passed."
