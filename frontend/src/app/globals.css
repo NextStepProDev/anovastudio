@@ -21,10 +21,69 @@
 
   --font-sans: var(--font-inter);
   --font-display: var(--font-poppins);
+
+  --animate-menu-in: menu-in 0.25s ease-out;
+
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  @apply bg-accent text-paper;
+}
+
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-accent;
+}
+
+@layer components {
+  /* Small uppercase section label with a leading accent rule. */
+  .kicker {
+    @apply flex items-center gap-3 font-display text-sm font-medium uppercase tracking-[0.2em] text-accent;
+  }
+  .kicker::before {
+    content: "";
+    @apply h-px w-8 bg-accent;
+  }
+
+  .btn {
+    @apply inline-flex h-12 items-center justify-center gap-2.5 px-8 font-display text-sm font-semibold tracking-wide transition-all duration-200 active:translate-y-px;
+  }
+  .btn-primary {
+    @apply bg-accent text-paper hover:bg-accent-dark;
+  }
+  .btn-outline {
+    @apply border border-ink text-ink hover:bg-ink hover:text-paper;
+  }
 }

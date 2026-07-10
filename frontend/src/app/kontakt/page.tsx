@@ -10,9 +10,7 @@ export const metadata: Metadata = {
 export default function KontaktPage() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
-      <p className="font-display text-sm font-medium uppercase tracking-[0.2em] text-accent">
-        Kontakt
-      </p>
+      <p className="kicker">Kontakt</p>
       <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
         Umów wizytę
       </h1>
@@ -66,15 +64,12 @@ export default function KontaktPage() {
                 href={CONTACT.bookingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-12 items-center justify-center bg-accent px-8 font-display text-sm font-semibold tracking-wide text-paper transition-colors hover:bg-accent-dark"
+                className="btn btn-primary"
               >
                 Zarezerwuj termin online
               </a>
             ) : (
-              <a
-                href={CONTACT.phoneHref}
-                className="inline-flex h-12 items-center justify-center bg-accent px-8 font-display text-sm font-semibold tracking-wide text-paper transition-colors hover:bg-accent-dark"
-              >
+              <a href={CONTACT.phoneHref} className="btn btn-primary">
                 Zadzwoń i umów wizytę
               </a>
             )}

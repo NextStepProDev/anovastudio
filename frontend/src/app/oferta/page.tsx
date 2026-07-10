@@ -14,9 +14,7 @@ export default async function OfertaPage() {
 
   return (
     <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
-      <p className="font-display text-sm font-medium uppercase tracking-[0.2em] text-accent">
-        Oferta i cennik
-      </p>
+      <p className="kicker">Oferta i cennik</p>
       <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
         Jak możemy Ci pomóc
       </h1>
@@ -32,31 +30,32 @@ export default async function OfertaPage() {
               key={service.documentId}
               as="li"
               delay={index * 0.08}
-              className="flex flex-col gap-2 py-6 sm:flex-row sm:items-baseline sm:justify-between sm:gap-8"
+              className="py-6"
             >
-              <div className="max-w-xl">
+              <div className="flex items-baseline justify-between gap-4">
                 <h2 className="font-display text-lg font-semibold text-ink">
                   {service.name}
                 </h2>
-                {service.description && (
-                  <p className="mt-1 text-sm leading-6 text-ink-soft">
-                    {service.description}
-                  </p>
-                )}
+                <span
+                  aria-hidden
+                  className="hidden flex-1 border-b border-dotted border-ink-muted/50 sm:block"
+                />
+                <p className="shrink-0 font-display text-lg font-semibold tabular-nums text-accent">
+                  {service.price}
+                </p>
               </div>
-              <p className="shrink-0 font-display text-lg font-semibold text-accent">
-                {service.price}
-              </p>
+              {service.description && (
+                <p className="mt-1 max-w-xl text-sm leading-6 text-ink-soft">
+                  {service.description}
+                </p>
+              )}
             </Reveal>
           ))}
         </ul>
       )}
 
       <div className="mt-12">
-        <Link
-          href="/kontakt"
-          className="inline-flex h-12 items-center justify-center bg-accent px-8 font-display text-sm font-semibold tracking-wide text-paper transition-colors hover:bg-accent-dark"
-        >
+        <Link href="/kontakt" className="btn btn-primary">
           Umów wizytę
         </Link>
       </div>

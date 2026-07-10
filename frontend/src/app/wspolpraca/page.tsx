@@ -27,9 +27,7 @@ export default function WspolpracaPage() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
       <Reveal>
-        <p className="font-display text-sm font-medium uppercase tracking-[0.2em] text-accent">
-          Współpraca
-        </p>
+        <p className="kicker">Współpraca</p>
         <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
           Współpracujmy dla zdrowia
         </h1>
@@ -46,9 +44,12 @@ export default function WspolpracaPage() {
             as="li"
             key={audience.name}
             delay={index * 0.1}
-            className="border border-line bg-paper-warm p-8"
+            className="border border-line bg-paper-warm p-8 transition-colors duration-300 hover:border-ink"
           >
-            <h2 className="font-display text-xl font-semibold text-ink">
+            <span className="font-display text-sm font-semibold tracking-[0.2em] text-accent">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <h2 className="mt-4 font-display text-xl font-semibold text-ink">
               {audience.name}
             </h2>
             <p className="mt-3 text-sm leading-6 text-ink-soft">
@@ -60,16 +61,10 @@ export default function WspolpracaPage() {
 
       <Reveal delay={0.2} className="mt-14">
         <div className="flex flex-col gap-4 sm:flex-row">
-          <Link
-            href="/kontakt"
-            className="inline-flex h-12 items-center justify-center bg-accent px-8 font-display text-sm font-semibold tracking-wide text-paper transition-colors hover:bg-accent-dark"
-          >
+          <Link href="/kontakt" className="btn btn-primary">
             Skontaktuj się z nami
           </Link>
-          <a
-            href={CONTACT.phoneHref}
-            className="inline-flex h-12 items-center justify-center border border-ink px-8 font-display text-sm font-semibold tracking-wide text-ink transition-colors hover:bg-ink hover:text-paper"
-          >
+          <a href={CONTACT.phoneHref} className="btn btn-outline">
             {CONTACT.phoneDisplay}
           </a>
         </div>

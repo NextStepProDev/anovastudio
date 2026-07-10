@@ -15,9 +15,7 @@ export default async function ZespolPage() {
 
   return (
     <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
-      <p className="font-display text-sm font-medium uppercase tracking-[0.2em] text-accent">
-        Zespół
-      </p>
+      <p className="kicker">Zespół</p>
       <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
         Ludzie, którym możesz zaufać
       </h1>
@@ -39,7 +37,7 @@ export default async function ZespolPage() {
                   alt={member.photo.alternativeText ?? member.fullName}
                   fill
                   sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
                 />
               )}
             </div>

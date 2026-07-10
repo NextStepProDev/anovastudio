@@ -21,14 +21,21 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-paper/90 backdrop-blur-md">
+      <div aria-hidden className="h-0.5 bg-accent" />
       <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5">
-        <Link href="/" onClick={() => setMenuOpen(false)}>
+        <Link
+          href="/"
+          onClick={() => setMenuOpen(false)}
+          className="inline-flex"
+        >
           <Image
             src="/logo/logo-black.png"
             alt={`${BRAND} — rehabilitacja ortopedyczna i sportowa`}
             width={160}
             height={58}
             preload
+            draggable={false}
+            className="pointer-events-none select-none [-webkit-user-drag:none]"
           />
         </Link>
 
@@ -37,8 +44,10 @@ export default function Header() {
             <Link
               key={href}
               href={href}
-              className={`font-display text-sm tracking-wide transition-colors hover:text-accent ${
-                pathname === href ? "text-accent" : "text-ink-soft"
+              className={`relative font-display text-sm tracking-wide transition-colors after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:bg-accent after:transition-transform after:duration-300 hover:text-ink hover:after:scale-x-100 ${
+                pathname === href
+                  ? "text-ink after:scale-x-100"
+                  : "text-ink-soft after:scale-x-0"
               }`}
             >
               {label}
@@ -72,7 +81,7 @@ export default function Header() {
       </div>
 
       {menuOpen && (
-        <nav className="border-t border-line bg-paper md:hidden">
+        <nav className="animate-menu-in border-t border-line bg-paper md:hidden">
           <ul className="flex flex-col px-5 py-3">
             {navLinks.map(({ href, label }) => (
               <li key={href}>

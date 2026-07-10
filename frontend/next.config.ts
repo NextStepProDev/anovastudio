@@ -3,6 +3,9 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Dev only: lets the dev server be reached through an ngrok tunnel
+  // (Next blocks cross-origin requests to dev assets by default).
+  allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok.app", "*.ngrok.dev"],
   turbopack: {
     root: path.join(__dirname),
   },

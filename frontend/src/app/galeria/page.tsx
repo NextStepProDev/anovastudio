@@ -14,9 +14,7 @@ export default async function GaleriaPage() {
 
   return (
     <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
-      <p className="font-display text-sm font-medium uppercase tracking-[0.2em] text-accent">
-        Galeria
-      </p>
+      <p className="kicker">Galeria</p>
       <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
         Zajrzyj do naszego gabinetu
       </h1>
@@ -33,7 +31,7 @@ export default async function GaleriaPage() {
               <Reveal
                 key={photo.url}
                 delay={(index % 3) * 0.1}
-                className="mb-6 break-inside-avoid"
+                className="group mb-6 break-inside-avoid overflow-hidden"
               >
                 <Image
                   src={strapiMediaUrl(format.url)}
@@ -41,7 +39,7 @@ export default async function GaleriaPage() {
                   width={format.width}
                   height={format.height}
                   sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  className="w-full bg-paper-warm"
+                  className="w-full bg-paper-warm transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                 />
               </Reveal>
             );
