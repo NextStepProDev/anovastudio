@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getStaff, strapiMediaUrl } from "@/lib/strapi";
 import { BRAND } from "@/lib/contact";
 import Reveal from "@/components/Reveal";
+import ExpandableBio from "@/components/ExpandableBio";
 
 export const metadata: Metadata = {
   title: "Zespół",
@@ -48,11 +49,7 @@ export default async function ZespolPage() {
             <p className="mt-1 font-display text-sm font-medium uppercase tracking-wide text-accent">
               {member.position}
             </p>
-            {member.bio && (
-              <p className="mt-3 text-sm leading-6 text-ink-soft">
-                {member.bio}
-              </p>
-            )}
+            {member.bio && <ExpandableBio text={member.bio} className="mt-3" />}
             </article>
           </Reveal>
         ))}
