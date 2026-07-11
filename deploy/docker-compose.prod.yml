@@ -107,7 +107,9 @@ services:
   nginx:
     image: nginx:1.27-alpine
     container_name: anovastudio-nginx-prod
-    mem_limit: 32m
+    # 32m padało OOM-killem przy wielu równoległych uploadach do Media Library
+    # (27 zdjęć naraz po TLS/HTTP2) — 64m daje zapas na bufory połączeń.
+    mem_limit: 64m
     ports:
       - "80:80"
       - "443:443"
