@@ -1,7 +1,7 @@
-/** Nazwa marki — klientka planuje rebranding, więc każde użycie nazwy w serwisie musi iść przez tę stałą */
-export const BRAND = "fizjo4life";
+/** Nazwa marki — każde użycie nazwy w serwisie musi iść przez tę stałą */
+export const BRAND = "Anova Studio";
 
-/** Bazowy URL serwisu (sitemap, robots, canonical). Domena jeszcze nie kupiona — ustawić NEXT_PUBLIC_SITE_URL w env produkcyjnym */
+/** Bazowy URL serwisu (sitemap, robots, canonical). Domena docelowa: anovastudio.pl — ustawić NEXT_PUBLIC_SITE_URL w env produkcyjnym */
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 

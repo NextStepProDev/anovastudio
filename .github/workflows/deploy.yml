@@ -86,8 +86,8 @@ jobs:
           script: |
             echo "Waiting for containers to become healthy..."
             for i in $(seq 1 16); do
-              STRAPI=$(docker inspect --format='{{.State.Health.Status}}' fizjo-strapi-prod 2>/dev/null || echo "missing")
-              FRONT=$(docker inspect --format='{{.State.Health.Status}}' fizjo-frontend-prod 2>/dev/null || echo "missing")
+              STRAPI=$(docker inspect --format='{{.State.Health.Status}}' anovastudio-strapi-prod 2>/dev/null || echo "missing")
+              FRONT=$(docker inspect --format='{{.State.Health.Status}}' anovastudio-frontend-prod 2>/dev/null || echo "missing")
               echo "Attempt $i/16: strapi = $STRAPI, frontend = $FRONT"
               if [ "$STRAPI" = "healthy" ] && [ "$FRONT" = "healthy" ]; then
                 echo "Deployment verified successfully."
@@ -96,8 +96,8 @@ jobs:
               sleep 15
             done
             echo "ERROR: containers did not become healthy within 4 minutes."
-            docker logs --tail 80 fizjo-strapi-prod || true
-            docker logs --tail 80 fizjo-frontend-prod || true
+            docker logs --tail 80 anovastudio-strapi-prod || true
+            docker logs --tail 80 anovastudio-frontend-prod || true
             exit 1
 
       - name: Smoke test public endpoints
