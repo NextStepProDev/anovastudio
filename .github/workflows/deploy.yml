@@ -105,13 +105,17 @@ jobs:
         # domain exists); skipped until then.
         if: vars.SITE_URL != ''
         run: |
+          # Each value is a space-separated list of acceptable status codes.
+          # /api/gallery is a Strapi single type: with no published entry it
+          # returns 404 (not 200 like the empty /api/services collection), which
+          # is valid until the client adds gallery content — so accept both.
           declare -A CHECKS=(
             ["${{ vars.SITE_URL }}/"]=200
             ["${{ vars.SITE_URL }}/oferta"]=200
             ["${{ vars.SITE_URL }}/galeria"]=200
             ["${{ vars.SITE_URL }}/kontakt"]=200
             ["${{ vars.STRAPI_URL }}/api/services"]=200
-            ["${{ vars.STRAPI_URL }}/api/gallery"]=200
+            ["${{ vars.STRAPI_URL }}/api/gallery"]="200 404"
           )
           FAILED=0
           for url in "${!CHECKS[@]}"; do
@@ -119,16 +123,17 @@ jobs:
             CODE="000"
             for attempt in 1 2 3; do
               CODE=$(curl -sS -m 15 -o /dev/null -w "%{http_code}" "$url" || echo "000")
-              [ "$CODE" = "$WANT" ] && break
+              case " $WANT " in *" $CODE "*) break;; esac
               echo "  ${url} -> HTTP ${CODE} (attempt ${attempt}/3), retrying in 5s..."
               sleep 5
             done
-            if [ "$CODE" = "$WANT" ]; then
-              echo "OK   HTTP ${CODE}  ${url}"
-            else
-              echo "FAIL HTTP ${CODE} (want ${WANT})  ${url}"
-              FAILED=1
-            fi
+            case " $WANT " in
+              *" $CODE "*)
+                echo "OK   HTTP ${CODE}  ${url}" ;;
+              *)
+                echo "FAIL HTTP ${CODE} (want ${WANT})  ${url}"
+                FAILED=1 ;;
+            esac
           done
           if [ "$FAILED" -ne 0 ]; then
             echo "ERROR: one or more public endpoints failed — deploy is unhealthy."
