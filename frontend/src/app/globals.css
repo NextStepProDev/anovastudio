@@ -100,10 +100,10 @@ p {
     @apply inline-flex h-12 items-center justify-center gap-2.5 px-8 font-display text-sm font-semibold tracking-wide transition-all duration-200 active:translate-y-px;
   }
   .btn-primary {
-    @apply bg-accent text-paper hover:bg-accent-dark;
-    /* Halo odsunięte od bryły (duży blur + ujemny spread, jak przy zdjęciu hero) —
-       świeci wokół przycisku, nie mgli jego krawędzi ani tekstu. */
-    box-shadow: 0 0 64px -12px color-mix(in srgb, var(--color-glow) 65%, transparent);
+    /* Bez bursztynowego halo — świecą inne elementy; CTA ma być przede wszystkim
+       czytelne (accent-dark: kontrast napisu 5.6:1 vs 4.0:1 na accent). */
+    @apply bg-accent-dark text-paper hover:bg-espresso-deep;
+    box-shadow: 0 10px 24px -14px rgb(0 0 0 / 0.5);
   }
   .btn-outline {
     @apply border border-ink text-ink hover:bg-ink hover:text-paper;

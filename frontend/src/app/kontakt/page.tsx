@@ -18,7 +18,9 @@ export default function KontaktPage() {
       </h1>
 
       <div className="mt-14 grid flex-1 gap-12 md:grid-cols-2">
-        <Reveal>
+        {/* justify-center: dane kontaktowe wiszą w pionie na środku wysokości mapy,
+            żeby rozciągnięta mapa nie "wystawała" pod krótszą kolumną tekstu. */}
+        <Reveal className="flex flex-col justify-center">
           <dl className="space-y-8">
             <div>
               <dt className="font-display text-sm font-semibold uppercase tracking-wide text-ink-muted">
