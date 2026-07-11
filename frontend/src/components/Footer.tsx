@@ -6,7 +6,7 @@ export default function Footer() {
     <footer className="grain relative overflow-hidden bg-espresso-deep text-paper">
       <div
         aria-hidden
-        className="h-0.5 bg-gradient-to-r from-transparent via-glow to-transparent"
+        className="h-0.5 bg-gradient-to-r from-transparent via-glow to-transparent shadow-[0_0_14px_1px_color-mix(in_srgb,var(--color-glow)_75%,transparent)]"
       />
       <div aria-hidden className="halo absolute inset-0" />
       <div className="relative mx-auto flex max-w-6xl flex-col gap-10 px-5 py-14 md:flex-row md:items-start md:justify-between">

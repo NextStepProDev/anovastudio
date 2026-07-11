@@ -101,7 +101,9 @@ p {
   }
   .btn-primary {
     @apply bg-accent text-paper hover:bg-accent-dark;
-    box-shadow: 0 0 32px -4px color-mix(in srgb, var(--color-glow) 45%, transparent);
+    /* Halo odsunięte od bryły (duży blur + ujemny spread, jak przy zdjęciu hero) —
+       świeci wokół przycisku, nie mgli jego krawędzi ani tekstu. */
+    box-shadow: 0 0 64px -12px color-mix(in srgb, var(--color-glow) 65%, transparent);
   }
   .btn-outline {
     @apply border border-ink text-ink hover:bg-ink hover:text-paper;

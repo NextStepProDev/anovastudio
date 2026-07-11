@@ -43,7 +43,7 @@ export default function Home() {
           </Reveal>
 
           <Reveal delay={0.15}>
-            <div className="relative aspect-[4/3] overflow-hidden border border-glow/25 shadow-[0_0_80px_-10px_color-mix(in_srgb,var(--color-glow)_35%,transparent)]">
+            <div className="relative aspect-[4/3] overflow-hidden border border-glow/30 shadow-[0_0_84px_-10px_color-mix(in_srgb,var(--color-glow)_38%,transparent)]">
               <Image
                 src="/images/hero.jpg"
                 alt="Fizjoterapeutka podczas pracy z pacjentem"
