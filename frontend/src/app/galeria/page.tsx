@@ -28,20 +28,24 @@ export default async function GaleriaPage() {
           {photos.map((photo, index) => {
             const format = photo.formats?.medium ?? photo;
             return (
-              <Reveal
-                key={photo.url}
-                delay={(index % 3) * 0.1}
-                className="group mb-6 break-inside-avoid overflow-hidden"
-              >
-                <Image
-                  src={strapiMediaUrl(format.url)}
-                  alt={photo.alternativeText ?? ""}
-                  width={format.width}
-                  height={format.height}
-                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  className="w-full bg-paper-warm transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                />
-              </Reveal>
+              // The multi-column child stays a plain, untransformed div so Safari
+              // keeps every column's top aligned — the Motion transform and the
+              // overflow-clip live on the inner Reveal, never on the break element.
+              <div key={photo.url} className="mb-6 break-inside-avoid">
+                <Reveal
+                  delay={(index % 3) * 0.1}
+                  className="group block overflow-hidden"
+                >
+                  <Image
+                    src={strapiMediaUrl(format.url)}
+                    alt={photo.alternativeText ?? ""}
+                    width={format.width}
+                    height={format.height}
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="w-full bg-paper-warm transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                  />
+                </Reveal>
+              </div>
             );
           })}
         </div>
