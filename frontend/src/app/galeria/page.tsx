@@ -28,10 +28,15 @@ export default async function GaleriaPage() {
           {photos.map((photo, index) => {
             const format = photo.formats?.medium ?? photo;
             return (
-              // The multi-column child stays a plain, untransformed div so Safari
-              // keeps every column's top aligned — the Motion transform and the
-              // overflow-clip live on the inner Reveal, never on the break element.
-              <div key={photo.url} className="mb-6 break-inside-avoid">
+              // Safari mis-positions the first item of each CSS-column when the
+              // child is display:block — break-inside-avoid alone doesn't fix it,
+              // so the column child is inline-block w-full (the canonical masonry
+              // fix). The Motion transform and overflow-clip stay on the inner
+              // Reveal, never on the break element.
+              <div
+                key={photo.url}
+                className="mb-6 inline-block w-full break-inside-avoid"
+              >
                 <Reveal
                   delay={(index % 3) * 0.1}
                   className="group block overflow-hidden"
