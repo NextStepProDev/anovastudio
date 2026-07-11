@@ -14,79 +14,34 @@ Orthopedic and sports physiotherapy, corrective gymnastics, medical training, ki
 
 ## What this is
 
-A business-card website for a physiotherapy clinic, built as a small but complete production system: a public site the owner never has to touch, and a CMS panel where she manages every service, team member and gallery photo herself.
+The complete online presence of a physiotherapy clinic: a fast, elegant public website paired with a content panel the owner manages entirely on her own — services and prices, the team, gallery photos — with every change appearing on the site within a minute. No developer needed for day-to-day content work.
 
-- **Public site** — offer & price list, team, gallery, cooperation offer for sports clubs and companies, contact with a live map. Server-rendered, fast on a phone, refreshed within a minute of any content change.
-- **Admin panel** — Strapi CMS with Polish UI, role-separated accounts (developer keeps Super Admin, the owner works as Editor) and a media library tuned for photo-heavy content.
+This is a real production system, not a static landing page: the site renders from a headless CMS, serves over HTTPS on its own infrastructure, and keeps working gracefully even while content is still being filled in.
 
-### Design
+## Who it's for
 
-The visual language follows the studio's interior moodboard: warm beige plaster surfaces, dark "evening studio" espresso sections, and **light as the signature ornament** — glowing kicker rules, radial halos, an amber LED line bracketing the header and footer, and a subtle plaster-grain texture on dark sections. Display typography is the Fraunces serif; all theme tokens live in `frontend/src/app/globals.css`.
+| Audience | What they get |
+|----------|---------------|
+| **Patient** | A clear picture of the offer and prices, the people behind the studio, and one-tap contact — phone, e-mail, directions on a live map. |
+| **Owner** | A friendly admin panel (in Polish) to manage services, team bios and photo galleries — safely separated from technical settings. |
+| **The clinic** | A professional, trustworthy presence in search results and a brand experience consistent with the studio's interior. |
 
-## Architecture
+## The offer
 
-```
-Strapi admin (browser)
-        │
-        ▼
-Strapi 5 (Node) ──── PostgreSQL 16
-        │
-        ▼  REST API
-Next.js 16 (server components, ISR 60 s)
-        │
-        ▼
-nginx (TLS, reverse proxy) ──► https://anovastudio.pl
-                              ├─ www.anovastudio.pl
-                              └─ api.anovastudio.pl (Strapi API + admin)
-```
+Everything the studio does, in one place:
 
-The frontend fetches exclusively through `frontend/src/lib/strapi.ts`, which degrades to empty states when the CMS is unreachable — so CI builds and production cold starts never fail on missing content.
+- **Orthopedic physiotherapy** — diagnosis-led treatment of the musculoskeletal system
+- **Sports physiotherapy** — injury recovery and return-to-training support
+- **Corrective gymnastics** — posture work for children and adults
+- **Medical training** — individually programmed, health-first strength work
+- **Kinesiotaping** and **massage**
 
-## Tech stack
+A dedicated cooperation page addresses sports clubs, companies and organized groups.
 
-| Layer | Tech |
-|-------|------|
-| Frontend | Next.js 16 (App Router, TypeScript, Turbopack), Tailwind CSS v4, Motion |
-| CMS | Strapi 5 (TypeScript) |
-| Database | PostgreSQL 16 |
-| Proxy / TLS | nginx, Let's Encrypt (auto-renewal via webroot) |
-| CI/CD | GitHub Actions → GHCR images → SSH deploy via Docker Compose |
-| Hosting | Oracle Cloud Always Free (1 GB RAM — memory limits calibrated, 2 GB swap) |
-| DNS | Cloudflare |
+## The look
 
-## Local development
+The design translates the studio's interior moodboard into the web: warm beige plaster surfaces, dark *evening-studio* espresso sections, and **light as the signature ornament** — a glowing amber line bracketing the page, soft halos behind headlines and photography, a delicate grain that reads like decorative plaster. Headlines are set in a serif with boutique-spa character; the whole palette avoids clinical white in favor of warmth and calm.
 
-```bash
-docker compose up -d              # dev PostgreSQL
-cd backend && npm run develop     # Strapi + admin → http://localhost:1337/admin
-cd frontend && npm run dev        # Next.js → http://localhost:3000
-```
+## Under the hood
 
-Environment files: `backend/.env` (see `backend/.env.example`) and `frontend/.env.local` with `NEXT_PUBLIC_STRAPI_URL=http://localhost:1337`.
-
-### Checks
-
-```bash
-cd frontend && npm run lint && npx tsc --noEmit && npm run build
-cd backend && npm run build
-
-# simulate CI (Strapi down — pages must build with empty states):
-cd frontend && NEXT_PUBLIC_STRAPI_URL=http://localhost:9999 npm run build
-```
-
-## Releases & deployment
-
-1. Merge to `main` with a bumped root `VERSION` file — path-filtered workflows lint, typecheck, build and push `ania-fizjo-frontend` / `ania-fizjo-backend` images to GHCR, tagged with that version.
-2. Run the **Deploy** workflow (Actions → Deploy → Run workflow) — it ships the compose file and nginx config over SSH, ensures swap, pulls the pinned images, waits for container health checks and smoke-tests the public endpoints.
-
-The production host is a 1 GB Oracle VM: container memory limits sum to ~830 MB by design (`deploy/docker-compose.prod.yml`), image variants and proxy timeouts are tuned so CMS photo uploads survive a single-OCPU CPU budget.
-
-## Repository layout
-
-```
-frontend/   Next.js site (src/app — pages, src/components, src/lib)
-backend/    Strapi CMS (content types under src/api/*)
-deploy/     production compose, nginx.conf, swap setup
-.github/    CI (per-app) + Deploy workflows
-VERSION     single source of truth for image tags
-```
+A modern, self-hosted stack — headless CMS feeding a server-rendered site behind a TLS reverse proxy, shipped through an automated build-and-deploy pipeline and running comfortably on a free-tier cloud machine. Built and operated by [NextStepProDev](https://github.com/NextStepProDev).
