@@ -4,7 +4,7 @@ services:
   # dociąża 2 GB swap z setup-swap.sh (bez niego stack nie wstanie).
   postgres:
     image: postgres:16-alpine
-    container_name: fizjo-postgres-prod
+    container_name: anovastudio-postgres-prod
     mem_limit: 192m
     command:
       - "postgres"
@@ -25,7 +25,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - fizjo_postgres_data_prod:/var/lib/postgresql/data
+      - anovastudio_postgres_data_prod:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 30s
@@ -39,8 +39,8 @@ services:
         max-file: "3"
 
   strapi:
-    image: ghcr.io/${GHCR_OWNER}/ania-fizjo-backend:${VERSION:-latest}
-    container_name: fizjo-strapi-prod
+    image: ghcr.io/${GHCR_OWNER}/anovastudio-backend:${VERSION:-latest}
+    container_name: anovastudio-strapi-prod
     mem_limit: 384m
     environment:
       NODE_ENV: production
@@ -64,7 +64,7 @@ services:
       IS_PROXIED: "true"
       TZ: Europe/Warsaw
     volumes:
-      - fizjo_uploads_prod:/app/public/uploads
+      - anovastudio_uploads_prod:/app/public/uploads
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:1337/_health || exit 1"]
       interval: 30s
@@ -82,8 +82,8 @@ services:
         max-file: "3"
 
   frontend:
-    image: ghcr.io/${GHCR_OWNER}/ania-fizjo-frontend:${VERSION:-latest}
-    container_name: fizjo-frontend-prod
+    image: ghcr.io/${GHCR_OWNER}/anovastudio-frontend:${VERSION:-latest}
+    container_name: anovastudio-frontend-prod
     mem_limit: 224m
     environment:
       # Trzymaj stertę V8 wyraźnie pod mem_limit; zapas na sharp (optymalizacja obrazów)
@@ -106,7 +106,7 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
-    container_name: fizjo-nginx-prod
+    container_name: anovastudio-nginx-prod
     mem_limit: 32m
     ports:
       - "80:80"
@@ -126,5 +126,5 @@ services:
         max-file: "3"
 
 volumes:
-  fizjo_postgres_data_prod:
-  fizjo_uploads_prod:
+  anovastudio_postgres_data_prod:
+  anovastudio_uploads_prod:
