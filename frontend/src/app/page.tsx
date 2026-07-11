@@ -14,9 +14,11 @@ const services = [
 export default function Home() {
   return (
     <>
-      <section className="section-dark grain relative overflow-hidden">
+      {/* flex-1: the dark hero absorbs any leftover viewport height (main is a
+          flex column), so no light gap opens between the services strip and the footer. */}
+      <section className="section-dark grain relative flex flex-1 flex-col justify-center overflow-hidden">
         <div aria-hidden className="halo absolute inset-0" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 md:grid-cols-2 md:py-24">
+        <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 px-5 py-16 md:grid-cols-2 md:py-24">
           <Reveal>
             <p className="kicker text-glow">
               Gabinet fizjoterapii ortopedycznej i sportowej

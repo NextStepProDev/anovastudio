@@ -9,13 +9,15 @@ export const metadata: Metadata = {
 
 export default function KontaktPage() {
   return (
-    <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
+    // flex-1 + flex-col: the grid grows into the leftover viewport height,
+    // so the map column (md:flex-1) stretches instead of leaving dead space.
+    <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-5 py-16 md:py-24">
       <p className="kicker">Kontakt</p>
       <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
         Umów wizytę
       </h1>
 
-      <div className="mt-14 grid gap-12 md:grid-cols-2">
+      <div className="mt-14 grid flex-1 gap-12 md:grid-cols-2">
         <Reveal>
           <dl className="space-y-8">
             <div>
