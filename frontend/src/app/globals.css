@@ -41,12 +41,6 @@
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
-}
-
 html {
   /* Match the beige theme in overscroll areas and the scrollbar track —
      the default white track reads as a stray stripe next to dark sections. */
