@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import Reveal from "@/components/Reveal";
-import type { Service, ServiceLocation } from "@/lib/strapi";
+import type { Service } from "@/lib/strapi";
+
+/** Kafelki cennika to tylko dwie lokalizacje; wartość usługi „oba" pasuje do obu. */
+type TabId = "libiaz" | "katowice";
 
 const LOCATIONS: {
-  id: ServiceLocation;
+  id: TabId;
   label: string;
   locative: string;
   hint: string;
@@ -15,14 +18,16 @@ const LOCATIONS: {
 ];
 
 /**
- * Kafelki wyboru lokalizacji nad cennikiem. Domyślnie Libiąż (jego cennik widzi
- * crawler). Katowice na razie bez usług → komunikat „w przygotowaniu" — kafelek jest
- * gotowy pod przyszłe rozwinięcie oferty. Usługi bez ustawionej lokalizacji
- * traktujemy jak „libiaz".
+ * Kafelki wyboru lokalizacji nad cennikiem. Domyślnie aktywny Libiąż (jego cennik
+ * widzi crawler). Usługa trafia do zakładki, gdy jej `location` = ta zakładka lub
+ * „oba". Brak ustawionej lokalizacji = nie pokazuje się nigdzie (pole jest wymagane
+ * w Strapi, więc to tylko zabezpieczenie starych/niekompletnych rekordów).
  */
 export default function OfferLocationTabs({ services }: { services: Service[] }) {
-  const [active, setActive] = useState<ServiceLocation>("libiaz");
-  const filtered = services.filter((s) => (s.location ?? "libiaz") === active);
+  const [active, setActive] = useState<TabId>("libiaz");
+  const filtered = services.filter(
+    (s) => s.location === active || s.location === "oba",
+  );
   const activeLoc = LOCATIONS.find((loc) => loc.id === active)!;
 
   return (

@@ -28,8 +28,8 @@
     },
     "location": {
       "type": "enumeration",
-      "enum": ["libiaz", "katowice"],
-      "default": "libiaz"
+      "enum": ["libiaz", "katowice", "oba"],
+      "required": true
     }
   }
 }

@@ -29,7 +29,8 @@ export interface StaffMember {
   photo: StrapiImage | null;
 }
 
-export type ServiceLocation = "libiaz" | "katowice";
+/** "oba" = usługa pokazuje się w obu lokalizacjach. Pole jest wymagane w Strapi. */
+export type ServiceLocation = "libiaz" | "katowice" | "oba";
 
 export interface Service {
   id: number;
@@ -38,7 +39,6 @@ export interface Service {
   description: string | null;
   price: string;
   order: number;
-  /** Brak wartości (starsze rekordy) traktujemy jak "libiaz". */
   location: ServiceLocation | null;
 }
 
