@@ -13,6 +13,8 @@ const inter = Inter({
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin", "latin-ext"],
+  // normal + italic (prawdziwa kursywa Fraunces, nie sztuczny faux-italic)
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {

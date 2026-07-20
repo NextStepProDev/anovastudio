@@ -33,7 +33,7 @@ export default function ExpandableBio({ text, className }: ExpandableBioProps) {
           line-clamp hides, so the phantom lines would swallow button clicks. */}
       <p
         ref={paragraphRef}
-        className={`text-sm leading-6 text-ink-soft ${expanded ? "" : "pointer-events-none line-clamp-5"}`}
+        className={`whitespace-pre-line text-sm leading-6 text-ink-soft ${expanded ? "" : "pointer-events-none line-clamp-5"}`}
       >
         {text}
       </p>

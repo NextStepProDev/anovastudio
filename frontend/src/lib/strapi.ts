@@ -23,9 +23,13 @@ export interface StaffMember {
   fullName: string;
   position: string;
   bio: string | null;
+  /** Kursy i szkolenia — jeden na linię; renderowane jako lista pod bio. */
+  courses: string | null;
   order: number;
   photo: StrapiImage | null;
 }
+
+export type ServiceLocation = "libiaz" | "katowice";
 
 export interface Service {
   id: number;
@@ -34,6 +38,8 @@ export interface Service {
   description: string | null;
   price: string;
   order: number;
+  /** Brak wartości (starsze rekordy) traktujemy jak "libiaz". */
+  location: ServiceLocation | null;
 }
 
 interface Gallery {

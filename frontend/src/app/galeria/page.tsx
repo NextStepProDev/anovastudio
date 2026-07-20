@@ -39,7 +39,7 @@ export default async function GaleriaPage() {
               >
                 <Reveal
                   delay={(index % 3) * 0.1}
-                  className="group block overflow-hidden"
+                  className="group photo-frame block"
                 >
                   <Image
                     src={strapiMediaUrl(format.url)}

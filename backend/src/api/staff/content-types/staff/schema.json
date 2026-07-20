@@ -29,6 +29,9 @@
     "bio": {
       "type": "text"
     },
+    "courses": {
+      "type": "text"
+    },
     "order": {
       "type": "integer",
       "default": 0

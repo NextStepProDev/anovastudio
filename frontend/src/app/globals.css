@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4eee4;
+  /* Tło body = główny krem (--color-paper), spójne we WSZYSTKICH zakładkach i pod belką. */
+  --background: #f5f0e8;
   --foreground: #2b241c;
 }
 
@@ -9,17 +10,22 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Brand: warm beige boutique-wellness palette with amber "light" accents.
-     Light surfaces read as decorative plaster; dark ones as an evening studio. */
+  /* Brand: jasna, kremowo-beżowa paleta zainspirowana logiem Anova (folder
+     „inspiracje kolorystyka loga"). Cała strona operuje TRZEMA odcieniami beżu —
+     światło buduje głębię, nie ciemne sekcje. Akcent (bursztyn) pozostaje. */
   --color-ink: #2b241c;
   --color-ink-soft: #5c5246;
   --color-ink-muted: #94897a;
-  --color-paper: #f4eee4;
-  --color-paper-warm: #eae0d1;
-  --color-line: #ded2bf;
-  --color-espresso: #362a1e;
-  --color-espresso-soft: #423225;
-  --color-espresso-deep: #251b11;
+  /* Trzy powierzchnie (od najjaśniejszej): krem → ciepły beż → głębszy greige. */
+  --color-paper: #f5f0e8;
+  --color-paper-warm: #e8dfd2;
+  --color-sand: #dccbb6;
+  --color-line: #d7c9bb;
+  /* Espresso: pozostawione dla ewentualnych ciemnych akcentów (hover CTA), nieużywane
+     jako tło sekcji po przejściu na jasną paletę. */
+  --color-espresso: #3a322a;
+  --color-espresso-soft: #4a4239;
+  --color-espresso-deep: #2b251f;
   --color-accent: #9c6b33;
   --color-accent-dark: #7f5527;
   --color-glow: #e9c795;
@@ -85,30 +91,37 @@ p {
     box-shadow: 0 0 10px 0 color-mix(in srgb, currentColor 70%, transparent);
   }
 
-  /* Dark "evening studio" section: espresso surface, light text. */
-  .section-dark {
-    @apply bg-espresso text-paper;
+  /* Delikatny, jaśniejszy pas beżu do subtelnego oddzielenia sekcji (nie ciemny). */
+  .section-band {
+    @apply bg-paper-warm text-ink;
   }
 
   .btn {
     @apply inline-flex h-12 items-center justify-center gap-2.5 px-8 font-display text-sm font-semibold tracking-wide transition-all duration-200 active:translate-y-px;
   }
   .btn-primary {
-    /* Bez bursztynowego halo — świecą inne elementy; CTA ma być przede wszystkim
-       czytelne (accent-dark: kontrast napisu 5.6:1 vs 4.0:1 na accent). */
-    @apply bg-accent-dark text-paper hover:bg-espresso-deep;
-    box-shadow: 0 10px 24px -14px rgb(0 0 0 / 0.5);
+    /* Główny „ciemny akcent" — grafitowy CTA jak czarne litery w logu, na kremowym tle. */
+    @apply bg-ink text-paper hover:bg-ink-soft;
+    box-shadow: 0 12px 26px -16px rgb(0 0 0 / 0.45);
   }
   .btn-outline {
     @apply border border-ink text-ink hover:bg-ink hover:text-paper;
   }
-  /* Outline button for dark sections. */
-  .btn-outline-light {
-    @apply border border-paper/40 text-paper hover:border-paper hover:bg-paper hover:text-ink;
-  }
 }
 
 @layer utilities {
+  /* Zaokrąglony kadr zdjęcia (wszystkie 4 rogi). Świadomie NIE łuk / rounded-t-full —
+     łuki zostały odrzucone jako „nagrobki". Wspólny promień dla hero / Zespołu / Galerii. */
+  .photo-frame {
+    border-radius: 1.75rem;
+    overflow: hidden;
+  }
+  /* Wariant „opływowy" — miękki, asymetryczny kształt do dużego kadru w hero. */
+  .photo-frame-organic {
+    border-radius: 2.75rem 2.75rem 2.75rem 5rem;
+    overflow: hidden;
+  }
+
   /* Subtle plaster-like noise for dark sections. */
   .grain {
     position: relative;

@@ -78,6 +78,40 @@ export default function KontaktPage() {
               </a>
             )}
           </div>
+
+          {(CONTACT.facebook || CONTACT.instagram) && (
+            <div className="mt-10">
+              <p className="font-display text-sm font-semibold uppercase tracking-wide text-ink-muted">
+                Znajdź nas
+              </p>
+              <ul className="mt-3 flex gap-6 text-lg">
+                {CONTACT.facebook && (
+                  <li>
+                    <a
+                      href={CONTACT.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-ink transition-colors hover:text-accent"
+                    >
+                      Facebook
+                    </a>
+                  </li>
+                )}
+                {CONTACT.instagram && (
+                  <li>
+                    <a
+                      href={CONTACT.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-ink transition-colors hover:text-accent"
+                    >
+                      Instagram
+                    </a>
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
         </Reveal>
 
         <Reveal delay={0.15} className="flex flex-col">

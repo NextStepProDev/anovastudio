@@ -25,6 +25,11 @@
     "order": {
       "type": "integer",
       "default": 0
+    },
+    "location": {
+      "type": "enumeration",
+      "enum": ["libiaz", "katowice"],
+      "default": "libiaz"
     }
   }
 }
