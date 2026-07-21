@@ -14,9 +14,12 @@ on:
       - VERSION
       - .github/workflows/ci-frontend.yml
 
+# Cancel superseded PR runs to save minutes, but NEVER cancel main-branch runs:
+# each push may bump VERSION and its docker job must build+push that image, or
+# the deploy pulls a tag that doesn't exist. Pushes on main queue instead.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

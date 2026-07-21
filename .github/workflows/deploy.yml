@@ -55,6 +55,10 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           envs: COMPOSE_B64,NGINX_B64,SWAP_B64
           script: |
+            # Abort (red deploy) on any failure — e.g. `docker compose pull`
+            # hitting a missing image tag — instead of silently continuing and
+            # leaving the old containers running while reporting success.
+            set -euo pipefail
             echo "$COMPOSE_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/docker-compose.prod.yml
             echo "$NGINX_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/nginx.conf
             # Ensure swap exists before starting memory-hungry containers (idempotent).
