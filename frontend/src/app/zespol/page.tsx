@@ -3,7 +3,7 @@ import Image from "next/image";
 import { getStaff, strapiMediaUrl } from "@/lib/strapi";
 import { BRAND } from "@/lib/contact";
 import Reveal from "@/components/Reveal";
-import ExpandableBio from "@/components/ExpandableBio";
+import StaffDetails from "@/components/StaffDetails";
 
 export const metadata: Metadata = {
   title: "Zespół",
@@ -47,28 +47,11 @@ export default async function ZespolPage() {
             <p className="mt-1 font-display text-sm font-medium uppercase tracking-wide text-accent">
               {member.position}
             </p>
-            {member.bio && <ExpandableBio text={member.bio} className="mt-3" />}
-            {member.courses && (
-              <div className="mt-4">
-                <p className="font-display text-sm font-semibold uppercase tracking-wide text-ink-muted">
-                  Kursy i szkolenia
-                </p>
-                <ul className="mt-2 space-y-1 text-sm leading-6 text-ink-soft">
-                  {member.courses
-                    .split("\n")
-                    .map((line) => line.trim())
-                    .filter(Boolean)
-                    .map((course) => (
-                      <li
-                        key={course}
-                        className="relative pl-4 before:absolute before:left-0 before:top-[0.6em] before:h-1 before:w-1 before:rounded-full before:bg-accent"
-                      >
-                        {course}
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            )}
+            <StaffDetails
+              bio={member.bio}
+              courses={member.courses}
+              className="mt-3"
+            />
             </article>
           </Reveal>
         ))}
