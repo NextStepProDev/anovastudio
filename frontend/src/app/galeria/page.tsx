@@ -31,15 +31,18 @@ export default async function GaleriaPage() {
               // Safari mis-positions the first item of each CSS-column when the
               // child is display:block — break-inside-avoid alone doesn't fix it,
               // so the column child is inline-block w-full (the canonical masonry
-              // fix). The Motion transform and overflow-clip stay on the inner
-              // Reveal, never on the break element.
+              // fix). The hover `group` lives on this stable break element, NOT on
+              // the Reveal: Motion keeps an inline transform on the Reveal through
+              // its whileInView cycle, which made group-hover flaky on first load
+              // and broke rounded overflow-clipping — so the frame is a plain
+              // rectangle (overflow-hidden, no radius) on the Motion element.
               <div
                 key={photo.url}
-                className="mb-6 inline-block w-full break-inside-avoid"
+                className="group mb-6 inline-block w-full break-inside-avoid"
               >
                 <Reveal
                   delay={(index % 3) * 0.1}
-                  className="group photo-frame block"
+                  className="block overflow-hidden"
                 >
                   <Image
                     src={strapiMediaUrl(format.url)}
