@@ -143,4 +143,29 @@ p {
       transparent 70%
     );
   }
+
+  /* Sunlit plaster wall — the diffuse light streaks from the Oferta moodboard.
+     Layered radial gradients build depth from the three beige tokens: a warm
+     glow raking down from the upper right (the light source), a soft greige
+     pooling of shadow in the lower left, over a gentle paper→paper-warm wash.
+     Reusable on any page header; pair with `.grain` for plaster texture. */
+  .plaster {
+    background-color: var(--color-paper);
+    background-image:
+      radial-gradient(
+        130% 115% at 82% 4%,
+        color-mix(in srgb, var(--color-glow) 26%, transparent),
+        transparent 48%
+      ),
+      radial-gradient(
+        95% 85% at 8% 112%,
+        color-mix(in srgb, var(--color-sand) 60%, transparent),
+        transparent 55%
+      ),
+      radial-gradient(
+        120% 100% at 50% 42%,
+        var(--color-paper),
+        var(--color-paper-warm) 82%
+      );
+  }
 }
