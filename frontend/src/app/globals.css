@@ -79,6 +79,15 @@ p {
   @apply outline-2 outline-offset-2 outline-accent;
 }
 
+/* Tailwind v4 dropped the default `cursor: pointer` on <button> from Preflight,
+   so buttons show the arrow instead of the hand. Restore it for enabled buttons
+   (links/anchors already get it) — covers the Oferta location tabs, the mobile
+   menu toggle and every "read more"/toggle button. */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}
+
 @layer components {
   /* Small uppercase section label with a glowing LED-style leading rule. */
   .kicker {
