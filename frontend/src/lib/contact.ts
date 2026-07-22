@@ -8,7 +8,7 @@ export const SITE_URL =
 export const CONTACT = {
   phoneDisplay: "600 711 725",
   phoneHref: "tel:+48600711725",
-  email: "fizjo4life.libiaz@gmail.com",
+  email: "kontakt.anovastudio@gmail.com",
   addressStreet: "ul. 1 Maja 5C",
   addressCity: "32-590 Libiąż",
   /** Google Calendar Appointment Schedule link — waiting for the client to provide it */
