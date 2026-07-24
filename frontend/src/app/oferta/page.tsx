@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getServices } from "@/lib/strapi";
 import { BRAND } from "@/lib/contact";
-import OfferLocationTabs from "@/components/OfferLocationTabs";
+import OfferMenu from "@/components/OfferMenu";
 import Reveal from "@/components/Reveal";
 
 export const metadata: Metadata = {
@@ -10,9 +9,7 @@ export const metadata: Metadata = {
   description: `Oferta gabinetu ${BRAND} w Libiążu — fizjoterapia ortopedyczna i sportowa, gimnastyka korekcyjna, trening medyczny, kinesiotaping, masaż. Sprawdź cennik.`,
 };
 
-export default async function OfertaPage() {
-  const services = await getServices();
-
+export default function OfertaPage() {
   return (
     <div className="relative flex-1 overflow-hidden bg-paper">
       {/* Hero na „nasłonecznionej ścianie": tło (.plaster) + faktura (.grain),
@@ -62,13 +59,27 @@ export default async function OfertaPage() {
         </div>
       </section>
 
-      <section className="relative mx-auto max-w-6xl px-5 pb-16 md:pb-24">
-        <OfferLocationTabs services={services} />
+      {/* Ambientowe światło ściany — miękka bursztynowa poświata z góry-prawej,
+          kontynuacja kierunku światła z hero (.plaster). Pełna szerokość (full-bleed),
+          niska intensywność, żeby beż nie był płaski. Treść siedzi nad tłem naturalnie. */}
+      <section className="relative overflow-hidden bg-[radial-gradient(58%_42%_at_86%_0%,color-mix(in_srgb,var(--color-glow)_20%,transparent),transparent_70%)]">
+        <div className="mx-auto max-w-6xl px-5 pb-16 md:pb-24">
+          <OfferMenu />
 
-        <div className="mt-12">
-          <Link href="/kontakt" className="btn btn-primary">
-            Umów wizytę
-          </Link>
+          {/* Domykające, spokojne CTA — bez ikon i kart, samo światło i typografia. */}
+          <Reveal className="mt-16 text-center md:mt-20">
+            <h2 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
+              Masz pytania?
+            </h2>
+            <p className="mx-auto mt-3 max-w-md text-base leading-7 text-ink-soft">
+              Skontaktuj się z nami — chętnie pomożemy dobrać odpowiednią terapię.
+            </p>
+            <div className="mt-8 flex justify-center">
+              <Link href="/kontakt" className="btn btn-primary">
+                Umów wizytę
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
     </div>

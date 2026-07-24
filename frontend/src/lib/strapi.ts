@@ -29,19 +29,6 @@ export interface StaffMember {
   photo: StrapiImage | null;
 }
 
-/** "oba" = usługa pokazuje się w obu lokalizacjach. Pole jest wymagane w Strapi. */
-export type ServiceLocation = "libiaz" | "katowice" | "oba";
-
-export interface Service {
-  id: number;
-  documentId: string;
-  name: string;
-  description: string | null;
-  price: string;
-  order: number;
-  location: ServiceLocation | null;
-}
-
 interface Gallery {
   id: number;
   documentId: string;
@@ -108,8 +95,4 @@ export async function getGalleryPhotos(): Promise<StrapiImage[]> {
 
 export function getStaff(): Promise<StaffMember[]> {
   return fetchCollection<StaffMember>("/api/staffs?populate=photo&sort=order:asc");
-}
-
-export function getServices(): Promise<Service[]> {
-  return fetchCollection<Service>("/api/services?sort=order:asc");
 }
