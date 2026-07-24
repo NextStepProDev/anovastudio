@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND, CONTACT } from "@/lib/contact";
+import { PARTNERS } from "@/lib/partners";
 import Reveal from "@/components/Reveal";
 
 export const metadata: Metadata = {
@@ -59,7 +60,46 @@ export default function WspolpracaPage() {
         ))}
       </ul>
 
-      <Reveal delay={0.2} className="mt-14">
+      {/* Ściana partnerów — logotypy klikalne, prowadzą na stronę partnera.
+          Wspólne wykończenie (wyszarzenie + mix-blend-multiply, pełny kolor na
+          hover) ujednolica różnorodne źródła: czarne znaki, kolorowy herb i
+          logo na białym tle „rozpływają się" w ciepłym kafelku, a pod kursorem
+          rozświetlają. */}
+      <div className="mt-20 md:mt-28">
+        <Reveal>
+          <p className="kicker">Partnerzy</p>
+          <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight text-ink md:text-3xl">
+            Zaufali nam
+          </h2>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-ink-soft">
+            Kluby sportowe i organizacje, z którymi współpracujemy na co dzień.
+            Kliknij logo, aby przejść na stronę partnera.
+          </p>
+        </Reveal>
+
+        <ul className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+          {PARTNERS.map((partner, index) => (
+            <Reveal as="li" key={partner.name} delay={index * 0.08}>
+              <a
+                href={partner.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${partner.name} — otwórz stronę partnera w nowej karcie`}
+                className="group flex h-32 items-center justify-center border border-line bg-paper-warm p-6 transition-all duration-300 hover:border-accent hover:shadow-[0_16px_48px_-16px_color-mix(in_srgb,var(--color-accent)_35%,transparent)] md:h-36"
+              >
+                <img
+                  src={partner.logo}
+                  alt={partner.name}
+                  loading="lazy"
+                  className="max-h-full w-auto max-w-[78%] object-contain opacity-70 mix-blend-multiply grayscale transition duration-300 group-hover:scale-[1.03] group-hover:opacity-100 group-hover:grayscale-0"
+                />
+              </a>
+            </Reveal>
+          ))}
+        </ul>
+      </div>
+
+      <Reveal delay={0.2} className="mt-20 md:mt-28">
         <div className="flex flex-col gap-4 sm:flex-row">
           <Link href="/kontakt" className="btn btn-primary">
             Skontaktuj się z nami
