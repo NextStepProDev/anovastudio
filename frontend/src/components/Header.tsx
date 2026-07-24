@@ -47,7 +47,7 @@ export default function Header() {
             <Link
               key={href}
               href={href}
-              className={`relative font-display text-sm tracking-wide transition-colors after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:bg-accent after:transition-transform after:duration-300 hover:text-ink hover:after:scale-x-100 ${
+              className={`relative font-display text-base tracking-wide transition-colors after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:bg-accent after:transition-transform after:duration-300 hover:text-ink hover:after:scale-x-100 ${
                 pathname === href
                   ? "text-ink after:scale-x-100"
                   : "text-ink-soft after:scale-x-0"
