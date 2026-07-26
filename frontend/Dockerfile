@@ -22,8 +22,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
-COPY --from=build /app/public ./public
+# Uruchamiaj jako nieuprzywilejowany użytkownik 'node' (obecny w obrazie).
+# --chown daje mu własność plików, w tym prawo zapisu do cache optymalizatora
+# obrazów (.next/cache). Ogranicza skutki ewentualnego RCE w zależnościach.
+COPY --from=build --chown=node:node /app/.next/standalone ./
+COPY --from=build --chown=node:node /app/.next/static ./.next/static
+COPY --from=build --chown=node:node /app/public ./public
+USER node
 EXPOSE 3000
 CMD ["node", "server.js"]

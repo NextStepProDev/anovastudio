@@ -40,6 +40,11 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # Informacyjnie na razie (nie blokuje deployu). Gdy wyniki będą czyste,
+      # usuń continue-on-error, żeby high/critical wywalały build.
+      - name: npm audit (high+)
+        run: npm audit --audit-level=high
+        continue-on-error: true
       - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run build
