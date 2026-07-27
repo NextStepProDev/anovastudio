@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BRAND } from "@/lib/contact";
 import OfferMenu from "@/components/OfferMenu";
 import Reveal from "@/components/Reveal";
+import Watermark from "@/components/Watermark";
 
 export const metadata: Metadata = {
   title: "Oferta i cennik",
@@ -62,7 +63,8 @@ export default function OfertaPage() {
       {/* Ambientowe światło ściany — miękka bursztynowa poświata z góry-prawej,
           kontynuacja kierunku światła z hero (.plaster). Pełna szerokość (full-bleed),
           niska intensywność, żeby beż nie był płaski. Treść siedzi nad tłem naturalnie. */}
-      <section className="relative overflow-hidden bg-[radial-gradient(58%_42%_at_86%_0%,color-mix(in_srgb,var(--color-glow)_20%,transparent),transparent_70%)]">
+      <section className="relative isolate overflow-hidden bg-[radial-gradient(58%_42%_at_86%_0%,color-mix(in_srgb,var(--color-glow)_20%,transparent),transparent_70%)]">
+        <Watermark className="bottom-[-4%] right-[-4%] h-[480px]" />
         <div className="mx-auto max-w-6xl px-5 pb-16 md:pb-24">
           <OfferMenu />
 

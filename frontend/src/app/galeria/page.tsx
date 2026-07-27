@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getGalleryPhotos, strapiMediaUrl } from "@/lib/strapi";
 import { BRAND } from "@/lib/contact";
 import Reveal from "@/components/Reveal";
+import Watermark from "@/components/Watermark";
 
 export const metadata: Metadata = {
   title: "Galeria",
@@ -13,7 +14,8 @@ export default async function GaleriaPage() {
   const photos = await getGalleryPhotos();
 
   return (
-    <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
+    <section className="relative isolate mx-auto max-w-6xl px-5 py-16 md:py-24">
+      <Watermark className="right-[-4%] top-[2%] h-[400px]" />
       <p className="kicker">Galeria</p>
       <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
         Zajrzyj do naszego gabinetu

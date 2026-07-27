@@ -32,13 +32,14 @@ export default function Header() {
           className="inline-flex"
         >
           <Image
-            src="/logo/logo-black.png"
+            src="/logo/logo-compact.svg"
             alt={`${BRAND} — rehabilitacja ortopedyczna i sportowa`}
-            width={160}
-            height={58}
+            width={96}
+            height={68}
             preload
+            unoptimized
             draggable={false}
-            className="pointer-events-none select-none [-webkit-user-drag:none]"
+            className="pointer-events-none h-[68px] w-auto select-none [-webkit-user-drag:none]"
           />
         </Link>
 
