@@ -86,7 +86,9 @@ jobs:
       - name: Trivy image scan (high+)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/anovastudio-backend:${{ steps.version.outputs.version }}
+          # Nazwa obrazu musi być lowercase (owner NextStepProDev ma wielkie litery,
+          # a OCI reference wymaga małych — metadata-action lowercase'uje sam przy pushu).
+          image-ref: ghcr.io/nextstepprodev/anovastudio-backend:${{ steps.version.outputs.version }}
           format: table
           severity: HIGH,CRITICAL
           ignore-unfixed: true
