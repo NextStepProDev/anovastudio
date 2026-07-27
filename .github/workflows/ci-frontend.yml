@@ -73,7 +73,7 @@ jobs:
             type=ref,event=branch
             type=sha,prefix=sha-
             type=raw,value=${{ steps.version.outputs.version }},enable=${{ github.ref == 'refs/heads/main' }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: frontend
           # SITE_URL is a repository variable, set once the real domain exists;
