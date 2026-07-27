@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BRAND, CONTACT } from "@/lib/contact";
 import { PARTNERS } from "@/lib/partners";
 import Reveal from "@/components/Reveal";
+import Watermark from "@/components/Watermark";
 
 export const metadata: Metadata = {
   title: "Współpraca",
@@ -26,7 +27,8 @@ const audiences = [
 
 export default function WspolpracaPage() {
   return (
-    <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
+    <section className="relative isolate mx-auto max-w-6xl px-5 py-16 md:py-24">
+      <Watermark className="right-[-4%] top-[2%] h-[400px]" />
       <Reveal>
         <p className="kicker">Współpraca</p>
         <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
