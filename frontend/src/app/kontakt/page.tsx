@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BRAND, CONTACT } from "@/lib/contact";
 import Reveal from "@/components/Reveal";
+import Watermark from "@/components/Watermark";
 
 export const metadata: Metadata = {
   title: "Kontakt",
@@ -11,7 +12,8 @@ export default function KontaktPage() {
   return (
     // flex-1 + flex-col: the grid grows into the leftover viewport height,
     // so the map column (md:flex-1) stretches instead of leaving dead space.
-    <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-5 py-16 md:py-24">
+    <section className="relative isolate mx-auto flex w-full max-w-6xl flex-1 flex-col px-5 py-16 md:py-24">
+      <Watermark className="left-[-10%] top-1/2 h-[125%] -translate-y-1/2" />
       <p className="kicker">Kontakt</p>
       <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
         Umów wizytę

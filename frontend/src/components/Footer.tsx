@@ -11,10 +11,11 @@ export default function Footer() {
       <div className="relative mx-auto flex max-w-6xl flex-col gap-8 px-5 py-9 md:flex-row md:items-start md:justify-between">
         <div>
           <Image
-            src="/logo/logo-black.png"
+            src="/logo/logo.svg"
             alt={BRAND}
-            width={170}
-            height={62}
+            width={132}
+            height={112}
+            unoptimized
           />
           <p className="mt-4 max-w-xs text-sm leading-6 text-ink-soft">
             Gabinet fizjoterapii ortopedycznej i sportowej. Dbamy o zdrowie

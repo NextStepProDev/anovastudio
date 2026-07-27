@@ -4,6 +4,7 @@ import { getStaff, strapiMediaUrl } from "@/lib/strapi";
 import { BRAND } from "@/lib/contact";
 import Reveal from "@/components/Reveal";
 import StaffDetails from "@/components/StaffDetails";
+import Watermark from "@/components/Watermark";
 
 export const metadata: Metadata = {
   title: "Zespół",
@@ -14,7 +15,8 @@ export default async function ZespolPage() {
   const staff = await getStaff();
 
   return (
-    <section className="mx-auto max-w-6xl px-5 py-16 md:py-24">
+    <section className="relative isolate mx-auto max-w-6xl px-5 py-16 md:py-24">
+      <Watermark className="right-[-4%] top-[2%] h-[400px]" />
       <p className="kicker">Zespół</p>
       <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-ink">
         Ludzie, którym możesz zaufać
