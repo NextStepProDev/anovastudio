@@ -85,3 +85,18 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      # Skan CVE w warstwie systemowej obrazu (czego npm audit nie widzi).
+      # Informacyjnie na razie (exit-code 0 = nie blokuje deployu). ignore-unfixed
+      # ucina szum z podatności bez łatki; zostają te naprawialne bumpem bazy.
+      # Gdy wyniki będą czyste, ustaw exit-code na 1, by high/critical wywalały build.
+      - name: Trivy image scan (high+)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/anovastudio-frontend:${{ steps.version.outputs.version }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
