@@ -10,6 +10,14 @@ export const metadata: Metadata = {
   description: `Oferta gabinetu ${BRAND} w Libiążu — fizjoterapia ortopedyczna i sportowa, gimnastyka korekcyjna, trening medyczny, kinesiotaping, masaż. Sprawdź cennik.`,
 };
 
+// Miękka winieta wtapiająca hero w tło .plaster ze WSZYSTKICH stron (prawa
+// najszerzej, 42% — logo/ściana łagodnie rozpływają się w tle; lewa 20%) —
+// dzięki temu jeden zestaw masek działa i po prawej (desktop), i pod tekstem
+// (mobile). intersect = maski się przecinają (każda przycina), zamiast
+// domyślnego sumowania widocznego obszaru.
+const HERO_VIGNETTE =
+  "linear-gradient(to right, transparent, #000 20%), linear-gradient(to left, transparent, #000 42%), linear-gradient(to bottom, transparent, #000 12%), linear-gradient(to top, transparent, #000 16%)";
+
 export default function OfertaPage() {
   return (
     <div className="relative flex-1 overflow-hidden bg-paper">
@@ -44,15 +52,8 @@ export default function OfertaPage() {
             aria-hidden
             className="h-auto w-full object-cover object-[75%_center] md:h-[26rem]"
             style={{
-              // Miękka winieta wtapiająca obraz w tło .plaster ze WSZYSTKICH stron
-              // (prawa najszerzej, 42% — logo/ściana łagodnie rozpływają się w tle;
-              // lewa 20%) — dzięki temu jeden zestaw masek działa i po prawej
-              // (desktop), i pod tekstem (mobile). intersect = maski się przecinają
-              // (każda przycina), zamiast domyślnego sumowania widocznego obszaru.
-              maskImage:
-                "linear-gradient(to right, transparent, #000 20%), linear-gradient(to left, transparent, #000 42%), linear-gradient(to bottom, transparent, #000 12%), linear-gradient(to top, transparent, #000 16%)",
-              WebkitMaskImage:
-                "linear-gradient(to right, transparent, #000 20%), linear-gradient(to left, transparent, #000 42%), linear-gradient(to bottom, transparent, #000 12%), linear-gradient(to top, transparent, #000 16%)",
+              maskImage: HERO_VIGNETTE,
+              WebkitMaskImage: HERO_VIGNETTE,
               maskComposite: "intersect",
               WebkitMaskComposite: "source-in",
             }}

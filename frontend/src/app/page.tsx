@@ -134,7 +134,10 @@ export default function Home() {
       <section className="relative isolate border-y border-line bg-paper-warm">
         {/* tylko desktop — na mobile sekcje stackują się w pionie i ten graver
             lądował bezpośrednio nad graverem sekcji CTA (dwa znaki jeden nad drugim) */}
+        {/* własne id filtra — na tej stronie są DWA znaki wodne (drugi w sekcji
+            CTA niżej), a domyślne id dałoby zduplikowany id w dokumencie */}
         <Watermark
+          id="anova-emboss-quote"
           surface="paperWarm"
           className="hidden left-[-9%] top-1/2 h-[230%] -translate-y-1/2 md:block"
         />
@@ -147,7 +150,10 @@ export default function Home() {
 
       {/* Sekcja domykająca z CTA (copy Ani). */}
       <section className="relative isolate bg-paper">
-        <Watermark className="right-[-12%] top-1/2 h-[170%] -translate-y-1/2" />
+        <Watermark
+          id="anova-emboss-cta"
+          className="right-[-12%] top-1/2 h-[170%] -translate-y-1/2"
+        />
         <Reveal className="mx-auto max-w-3xl px-5 py-20 text-center md:py-28">
           <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink md:text-4xl">
             Wróć do siebie.

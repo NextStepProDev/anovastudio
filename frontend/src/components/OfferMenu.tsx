@@ -132,7 +132,8 @@ export default function OfferMenu() {
   const filtered = OFFER_SERVICES.filter(
     (s) => s.location === active || s.location === "oba",
   );
-  const activeLoc = LOCATIONS.find((loc) => loc.id === active)!;
+  const activeLoc =
+    LOCATIONS.find((loc) => loc.id === active) ?? LOCATIONS[0];
 
   return (
     <div className="mt-12">
@@ -171,9 +172,12 @@ export default function OfferMenu() {
 
       {filtered.length === 0 ? (
         <p className="mt-12 text-lg text-ink-soft">
-          {`Oferta w ${activeLoc.locative} jest w przygotowaniu — wkrótce więcej informacji.`}
+          Oferta w {activeLoc.locative} jest w przygotowaniu — wkrótce więcej
+          informacji.
         </p>
       ) : (
+        // key={active} celowo: przełączenie zakładki remountuje listę, dzięki
+        // czemu Reveal odpala animację wejścia od nowa dla nowego zestawu pozycji.
         <div key={active} className="mt-10 border-b border-line">
           {filtered.map((service, index) => (
             <Reveal key={service.slug} delay={index * 0.06}>

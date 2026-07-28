@@ -24,36 +24,32 @@ export default async function ZespolPage() {
 
       <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
         {staff.map((member, index) => (
-          <Reveal
-            key={member.documentId}
-            delay={index * 0.1}
-            className="group"
-          >
+          <Reveal key={member.documentId} delay={index * 0.1} className="group">
             <article>
-            <div className="photo-frame relative aspect-[3/4] bg-paper-warm ring-1 ring-line shadow-[0_24px_60px_-24px_color-mix(in_srgb,var(--color-accent)_45%,transparent)]">
-              {member.photo && (
-                <Image
-                  src={strapiMediaUrl(
-                    member.photo.formats?.medium?.url ?? member.photo.url,
-                  )}
-                  alt={member.photo.alternativeText ?? member.fullName}
-                  fill
-                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                />
-              )}
-            </div>
-            <h2 className="mt-5 font-display text-xl font-semibold text-ink">
-              {member.fullName}
-            </h2>
-            <p className="mt-1 font-display text-sm font-medium uppercase tracking-wide text-accent">
-              {member.position}
-            </p>
-            <StaffDetails
-              bio={member.bio}
-              courses={member.courses}
-              className="mt-3"
-            />
+              <div className="photo-frame relative aspect-[3/4] bg-paper-warm ring-1 ring-line shadow-[0_24px_60px_-24px_color-mix(in_srgb,var(--color-accent)_45%,transparent)]">
+                {member.photo && (
+                  <Image
+                    src={strapiMediaUrl(
+                      member.photo.formats?.medium?.url ?? member.photo.url,
+                    )}
+                    alt={member.photo.alternativeText ?? member.fullName}
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                  />
+                )}
+              </div>
+              <h2 className="mt-5 font-display text-xl font-semibold text-ink">
+                {member.fullName}
+              </h2>
+              <p className="mt-1 font-display text-sm font-medium uppercase tracking-wide text-accent">
+                {member.position}
+              </p>
+              <StaffDetails
+                bio={member.bio}
+                courses={member.courses}
+                className="mt-3"
+              />
             </article>
           </Reveal>
         ))}
