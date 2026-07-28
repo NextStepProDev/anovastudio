@@ -35,12 +35,9 @@ interface Gallery {
   photos: StrapiImage[] | null;
 }
 
-interface StrapiListResponse<T> {
-  data: T[];
-}
-
-interface StrapiSingleResponse<T> {
-  data: T | null;
+/** Strapi zawsze pakuje odpowiedź w `data` — kolekcja to tablica, single type obiekt lub null. */
+interface StrapiResponse<T> {
+  data: T;
 }
 
 /** Prefix a Strapi-relative upload path (e.g. /uploads/x.jpg) with the backend URL. */
@@ -49,10 +46,11 @@ export function strapiMediaUrl(path: string): string {
 }
 
 /**
- * Fetch a Strapi collection; returns [] when the backend is unreachable
- * (e.g. during CI builds) so pages render their empty states instead of failing.
+ * Fetch from Strapi; falls back to `fallback` when the backend is unreachable
+ * (e.g. during CI builds) or the entry hasn't been created/published yet, so
+ * pages render their empty states instead of failing the build.
  */
-async function fetchCollection<T>(path: string): Promise<T[]> {
+async function fetchStrapi<T>(path: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(`${STRAPI_URL}${path}`, {
       next: { revalidate: 60 },
@@ -60,39 +58,25 @@ async function fetchCollection<T>(path: string): Promise<T[]> {
     if (!res.ok) {
       throw new Error(`Strapi request failed: ${res.status}`);
     }
-    const json: StrapiListResponse<T> = await res.json();
+    const json: StrapiResponse<T> = await res.json();
     return json.data;
   } catch (error) {
     console.warn(`Strapi unreachable (${path}), rendering empty:`, error);
-    return [];
-  }
-}
-
-/**
- * Fetch a Strapi single type; returns null when the backend is unreachable
- * or the entry hasn't been created/published yet.
- */
-async function fetchSingle<T>(path: string): Promise<T | null> {
-  try {
-    const res = await fetch(`${STRAPI_URL}${path}`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) {
-      throw new Error(`Strapi request failed: ${res.status}`);
-    }
-    const json: StrapiSingleResponse<T> = await res.json();
-    return json.data;
-  } catch (error) {
-    console.warn(`Strapi unreachable (${path}), rendering empty:`, error);
-    return null;
+    return fallback;
   }
 }
 
 export async function getGalleryPhotos(): Promise<StrapiImage[]> {
-  const gallery = await fetchSingle<Gallery>("/api/gallery?populate=photos");
+  const gallery = await fetchStrapi<Gallery | null>(
+    "/api/gallery?populate=photos",
+    null,
+  );
   return gallery?.photos ?? [];
 }
 
 export function getStaff(): Promise<StaffMember[]> {
-  return fetchCollection<StaffMember>("/api/staffs?populate=photo&sort=order:asc");
+  return fetchStrapi<StaffMember[]>(
+    "/api/staffs?populate=photo&sort=order:asc",
+    [],
+  );
 }
