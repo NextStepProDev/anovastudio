@@ -45,14 +45,10 @@ export default function Home() {
             półce (gradient od dołu),
           • desktop: tekst po lewej na gradiencie poziomym, zdjęcie odsłonięte po prawej. */}
       <section className="relative flex min-h-[calc(100svh-82px)] items-end overflow-hidden bg-paper md:items-center">
+        {/* Welon pod tekstem żyje teraz w karuzeli (per slajd) — plansza brandowa go
+            nie dostaje, bo jest kremowa i tylko zjadałby logo. Patrz `PhotoVeil`. */}
         <div aria-hidden className="absolute inset-0">
           <HeroCarousel slides={heroSlides} />
-          {/* mobile: pionowy welon od dołu (delikatnie mocniejszy, ostrzejsza góra) */}
-          <div className="absolute inset-0 bg-gradient-to-t from-paper via-paper/66 via-44% to-transparent to-78% md:hidden" />
-          {/* desktop: poziomy welon od lewej — sięga dalej w prawo (~połowa tekstu),
-              a zdjęcie po prawej ostrzejsze; welon schodzi wcześniej, więc oryginalne
-              (nienaruszone) barwy zdjęcia mają większy obszar po prawej */}
-          <div className="absolute inset-0 hidden bg-gradient-to-r from-paper from-10% via-paper/60 via-64% to-transparent to-79% md:block" />
         </div>
 
         <div className="relative mx-auto w-full max-w-6xl px-5 py-12 md:py-12">
