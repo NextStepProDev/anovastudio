@@ -62,15 +62,22 @@ function PhotoVeil() {
 /**
  * Plansza otwierająca rotację: logotyp na oświetlonej ścianie (`.plaster`) z ciepłą
  * poświatą pod znakiem. To nie jest zdjęcie, więc zamiast `object-cover` dostaje
- * własny layout. Bez welonu znak może być duży i blisko środka — pilnujemy tylko
- * marginesu na blok tekstu (na desktopie po lewej, na mobile u dołu).
- * Wersja `logo-compact` (bez claimu), bo claim powtarza już kicker nad nagłówkiem.
+ * własny layout. Wersja `logo-compact` (bez claimu), bo claim powtarza już kicker.
+ *
+ * Znak dostaje wyłącznie ten obszar kadru, którego nie zajmuje blok tekstu, i skaluje
+ * się DO NIEGO — nigdy nie jest wymiarowany procentem ekranu, bo blok tekstu ma
+ * szerokość i wysokość w pikselach i przy takim liczeniu wchodzi na napisy.
  */
 function BrandSlide({ alt }: { alt: string }) {
   return (
     <div className="plaster absolute inset-0">
-      <div className="absolute left-1/2 top-[18%] w-[72%] max-w-[320px] -translate-x-1/2 md:left-auto md:right-[14%] md:top-1/2 md:w-[34%] md:max-w-[500px] md:translate-x-0 md:-translate-y-1/2">
-        <div aria-hidden className="halo absolute -inset-[40%]" />
+      {/* MOBILE (tekst przyklejony do dołu): znak dostaje pas nad nagłówkiem, a jego
+          wysokość to wysokość hero minus miejsce bloku tekstu. Blok jest w praktyce
+          stały (~380–410 px), więc odejmujemy 430 px zapasu i ograniczamy znak przez
+          `max-h-full`: na iPhonie SE zostaje tu tylko ~176 px, więc logo samo maleje
+          zamiast wejść w napisy; na wyższych ekranach rośnie. */}
+      <div className="absolute inset-x-0 top-0 flex h-[calc(100%-430px)] items-center justify-center px-6 md:hidden">
+        <div aria-hidden className="halo absolute inset-0" />
         {/* zwykły <img>: to SVG, więc optymalizator next/image nic tu nie wnosi */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -78,9 +85,29 @@ function BrandSlide({ alt }: { alt: string }) {
           alt={alt}
           width={472}
           height={339}
-          className="relative w-full"
+          className="relative max-h-full w-auto max-w-[68%]"
           decoding="async"
         />
+      </div>
+
+      {/* ≥md (tekst w pionie na środku, po lewej): znak idzie do prawej kolumny TEJ SAMEJ
+          siatki co treść hero — dlatego kontener powtarza `max-w-6xl px-5`. Szerokość to
+          reszta wiersza po bloku tekstu: 36rem (jego `max-w-xl`) + 1.5rem odstępu. Liczone
+          z siatki, nie z procentu ekranu, bo przy 768 px rząd przycisków sięga aż do 78%
+          szerokości okna i każde „prawe 14%" na niego wchodziło. */}
+      <div className="mx-auto hidden h-full max-w-6xl items-center justify-end px-5 md:flex">
+        <div className="relative w-[calc(100%-37.5rem)] max-w-[500px]">
+          <div aria-hidden className="halo absolute -inset-[40%]" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo/logo-compact.svg"
+            alt={alt}
+            width={472}
+            height={339}
+            className="relative w-full"
+            decoding="async"
+          />
+        </div>
       </div>
     </div>
   );
