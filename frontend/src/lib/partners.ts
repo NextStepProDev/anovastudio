@@ -8,6 +8,9 @@
  * Logotypy w /public/images/partners. Część źródeł jest kolorowa lub na białym
  * tle — ujednolica je wspólne wykończenie w komponencie (wyszarzenie +
  * mix-blend-multiply, pełny kolor na hover), więc pliki wrzucamy „jak są".
+ * Jedyny wyjątek: znak, który istnieje wyłącznie w wersji białej (bo strona
+ * partnera jest ciemna) — taki na kremowym kafelku byłby niewidoczny, więc
+ * przed wrzuceniem przebarwiamy go na ciemny, zachowując kanał alfa.
  */
 export interface Partner {
   /** Pełna nazwa — trafia też w alt logo i aria-label linku. */
@@ -38,5 +41,12 @@ export const PARTNERS: Partner[] = [
     name: "UKS „Jedynka” Libiąż",
     href: "https://www.facebook.com/profile.php?id=100057182781440",
     logo: "/images/partners/uks-jedynka.png",
+  },
+  {
+    // Bez numeru edycji w nazwie — turniej jest coroczny, rzymska cyfra by się
+    // zestarzała przy pierwszym sierpniu.
+    name: "Memoriał Macieja Klimasa",
+    href: "https://memorialkeneta.pl",
+    logo: "/images/partners/memorial-klimasa.png",
   },
 ];
