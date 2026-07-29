@@ -117,11 +117,20 @@ export default function KontaktPage() {
         </Reveal>
 
         <Reveal delay={0.15} className="flex flex-col">
-          <div className="relative aspect-[4/3] overflow-hidden bg-paper-warm md:aspect-auto md:flex-1">
+          {/* Wnętrza osadzonej mapy Google nie da się ostylować (obce origin), ale filtr
+              CSS działa na całym elemencie. Wartości dobrane tak, żeby domyślny „ląd"
+              Google (#f5f3f0) wypadł dokładnie w kolorze --color-paper: zbicie jasności
+              zdejmuje biel, sepia dokłada ciepło, a odsycenie tonuje krzykliwy błękit
+              wody i zieleń parków. Na hover filtr znika — ta sama zasada co na ścianie
+              partnerów: stonowane w spoczynku, pełny kolor, gdy ktoś naprawdę korzysta.
+              Celowo jedna właściwość [filter:...], a nie utilities brightness/sepia/saturate
+              — te Tailwind składa w stałej kolejności (jasność, odsycenie, sepia), a filtry
+              nie są przemienne: ląd wychodzi wtedy #f9f0e0 zamiast równo w paper. */}
+          <div className="group relative aspect-[4/3] overflow-hidden bg-paper-warm md:aspect-auto md:flex-1">
             <iframe
               src={CONTACT.mapsEmbedUrl}
               title={`Mapa dojazdu do gabinetu ${BRAND}`}
-              className="absolute inset-0 h-full w-full border-0"
+              className="absolute inset-0 h-full w-full border-0 [filter:brightness(0.94)_sepia(0.25)_saturate(0.5)] transition-[filter] duration-500 group-hover:[filter:none]"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               allowFullScreen
