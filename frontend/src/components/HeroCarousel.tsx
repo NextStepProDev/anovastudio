@@ -13,6 +13,24 @@ export type HeroSlide =
 const KEN_BURNS_SCALE = 1.14;
 
 /**
+ * Plansza brandowa dostaje własny, znacznie subtelniejszy zoom — i to na SAMYM znaku,
+ * wokół jego środka, a nie na całym slajdzie. Skalowanie slajdu idzie od środka kadru,
+ * więc wypychało logo (siedzące w pasie u góry) pod belkę menu; znak rosnący wokół
+ * własnego środka rozchodzi się symetrycznie i mieści w zapasie, jaki ma pas.
+ */
+const BRAND_MARK_SCALE = 1.05;
+
+/** Tytułówka wisi krócej niż kadr — to nie zdjęcie, nie ma się w co wpatrywać. */
+const BRAND_HOLD_RATIO = 2 / 3;
+
+/** Ile ten slajd ma być na ekranie, w ms. */
+function holdOf(slide: HeroSlide, interval: number) {
+  return slide.kind === "brand"
+    ? Math.round(interval * BRAND_HOLD_RATIO)
+    : interval;
+}
+
+/**
  * Zdjęcie z art direction: mobile dostaje pionowy kadr, desktop poziomy — przez
  * <picture> z media, więc ładuje się TYLKO pasujący plik. Pierwszy kadr ładowany
  * zachłannie (LCP), pozostałe leniwie.
@@ -68,7 +86,45 @@ function PhotoVeil() {
  * się DO NIEGO — nigdy nie jest wymiarowany procentem ekranu, bo blok tekstu ma
  * szerokość i wysokość w pikselach i przy takim liczeniu wchodzi na napisy.
  */
-function BrandSlide({ alt }: { alt: string }) {
+function BrandMark({
+  alt,
+  active,
+  duration,
+  className,
+}: {
+  alt: string;
+  active: boolean;
+  duration: number;
+  className: string;
+}) {
+  return (
+    // zwykły <img>, nie next/image: to SVG, optymalizator nic tu nie wnosi
+    <motion.img
+      src="/logo/logo-compact.svg"
+      alt={alt}
+      width={472}
+      height={339}
+      className={className}
+      decoding="async"
+      initial={{ scale: 1 }}
+      animate={{ scale: active ? BRAND_MARK_SCALE : 1 }}
+      transition={{
+        duration: active ? duration : 0.8,
+        ease: active ? "linear" : "easeOut",
+      }}
+    />
+  );
+}
+
+function BrandSlide({
+  alt,
+  active,
+  duration,
+}: {
+  alt: string;
+  active: boolean;
+  duration: number;
+}) {
   return (
     <div className="plaster absolute inset-0">
       {/* MOBILE (tekst przyklejony do dołu): znak dostaje pas nad nagłówkiem, a jego
@@ -79,15 +135,11 @@ function BrandSlide({ alt }: { alt: string }) {
           najniższych ekranach znak nie kleił się do belki menu. */}
       <div className="absolute inset-x-0 top-0 flex h-[calc(100%-430px)] items-center justify-center px-6 pb-2 pt-6 md:hidden">
         <div aria-hidden className="halo absolute inset-0" />
-        {/* zwykły <img>: to SVG, więc optymalizator next/image nic tu nie wnosi */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo/logo-compact.svg"
+        <BrandMark
           alt={alt}
-          width={472}
-          height={339}
+          active={active}
+          duration={duration}
           className="relative max-h-full w-auto max-w-[68%]"
-          decoding="async"
         />
       </div>
 
@@ -99,14 +151,11 @@ function BrandSlide({ alt }: { alt: string }) {
       <div className="mx-auto hidden h-full max-w-6xl items-center justify-end px-5 md:flex">
         <div className="relative w-[calc(100%-37.5rem)] max-w-[500px]">
           <div aria-hidden className="halo absolute -inset-[40%]" />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo/logo-compact.svg"
+          <BrandMark
             alt={alt}
-            width={472}
-            height={339}
+            active={active}
+            duration={duration}
             className="relative w-full"
-            decoding="async"
           />
         </div>
       </div>
@@ -115,9 +164,19 @@ function BrandSlide({ alt }: { alt: string }) {
 }
 
 /** Rozdziela oba typy slajdów — zdjęcie albo planszę brandową. */
-function Slide({ slide, eager }: { slide: HeroSlide; eager: boolean }) {
+function Slide({
+  slide,
+  eager,
+  active,
+  duration,
+}: {
+  slide: HeroSlide;
+  eager: boolean;
+  active: boolean;
+  duration: number;
+}) {
   return slide.kind === "brand" ? (
-    <BrandSlide alt={slide.alt} />
+    <BrandSlide alt={slide.alt} active={active} duration={duration} />
   ) : (
     <SlideImage slide={slide} eager={eager} />
   );
@@ -138,20 +197,22 @@ export default function HeroCarousel({
   const reduceMotion = useReducedMotion();
   const [index, setIndex] = useState(0);
 
+  // setTimeout, nie setInterval: czas ekspozycji zależy od slajdu (tytułówka wisi
+  // krócej), więc odliczanie trzeba uzbrajać od nowa po każdej zmianie kadru.
   useEffect(() => {
     if (reduceMotion || slides.length < 2) return;
-    const id = setInterval(
+    const id = setTimeout(
       () => setIndex((i) => (i + 1) % slides.length),
-      interval,
+      holdOf(slides[index], interval),
     );
-    return () => clearInterval(id);
-  }, [reduceMotion, slides.length, interval]);
+    return () => clearTimeout(id);
+  }, [index, reduceMotion, slides, interval]);
 
   if (reduceMotion || slides.length < 2) {
     const only = slides[0];
     return (
       <>
-        <Slide slide={only} eager />
+        <Slide slide={only} eager active={false} duration={0} />
         {only.kind !== "brand" && <PhotoVeil />}
       </>
     );
@@ -161,18 +222,16 @@ export default function HeroCarousel({
   // zachłannie ładujemy pierwsze prawdziwe zdjęcie w kolejce.
   const firstPhoto = slides.findIndex((slide) => slide.kind !== "brand");
 
-  // Zoom trwa nieco dłużej niż czas ekspozycji + przenikanie, żeby ruch był ciągły.
-  const zoomDuration = (interval + 1100) / 1000;
-
   return (
     <>
       {slides.map((slide, i) => {
         const active = i === index;
-        // Ken Burns tylko dla zdjęć. Skalowanie idzie od środka kadru, więc na planszy
-        // brandowej wypychało logo (siedzące w górnym pasie) do góry — na mobile znak
-        // wjeżdżał pod belkę menu i się ucinał. Logotyp i tak nie zyskuje na zoomie;
-        // planszę animuje samo przenikanie.
+        // Ken Burns (na całym kadrze) tylko dla zdjęć — na planszy brandowej wypychał
+        // logo pod belkę menu, więc ona rusza się inaczej: powiększa się sam znak,
+        // wokół własnego środka. Patrz BRAND_MARK_SCALE.
         const zooms = slide.kind !== "brand";
+        // Ruch trwa nieco dłużej niż ekspozycja + przenikanie, żeby był ciągły.
+        const zoomDuration = (holdOf(slide, interval) + 1100) / 1000;
         return (
           <motion.div
             key={i}
@@ -191,7 +250,12 @@ export default function HeroCarousel({
                 ease: active ? "linear" : "easeOut",
               }}
             >
-              <Slide slide={slide} eager={i === firstPhoto} />
+              <Slide
+                slide={slide}
+                eager={i === firstPhoto}
+                active={active}
+                duration={zoomDuration}
+              />
             </motion.div>
             {/* poza wrapperem Ken Burnsa — welon ma stać nieruchomo, nie zoomować */}
             {slide.kind !== "brand" && <PhotoVeil />}
