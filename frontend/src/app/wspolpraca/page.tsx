@@ -79,9 +79,18 @@ export default function WspolpracaPage() {
           </p>
         </Reveal>
 
-        <ul className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
+        {/* flex, nie grid — przy liczbie partnerów niepodzielnej przez liczbę kolumn
+            (dziś 5 na 4) siatka zostawiłaby samotny kafelek dociśnięty do lewej;
+            wrap z justify-center domyka ostatni rząd na środku. Szerokości liczone
+            z gapów, żeby rytm był identyczny jak w siatce: 2 kolumny / 4 kolumny. */}
+        <ul className="mt-10 flex flex-wrap justify-center gap-4 md:gap-6">
           {PARTNERS.map((partner, index) => (
-            <Reveal as="li" key={partner.name} delay={index * 0.08}>
+            <Reveal
+              as="li"
+              key={partner.name}
+              delay={index * 0.08}
+              className="w-[calc(50%-0.5rem)] md:w-[calc(25%-1.125rem)]"
+            >
               <a
                 href={partner.href}
                 target="_blank"

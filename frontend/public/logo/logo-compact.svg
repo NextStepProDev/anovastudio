@@ -6,7 +6,11 @@
       }
 
       .cls-2 {
-        fill: #d0b8a7;
+        /* Wersja webowa: oryginalny beż #d0b8a7 znika na kremowym tle strony
+           (kontrast 1.7:1), więc ludzik, „STUDIO" i kreski dostają markowy
+           akcent --color-accent z globals.css. Oryginalne pliki brandowe
+           (logo-black / logo-white / logo-mark) zostają bez zmian. */
+        fill: #9c6b33;
       }
     </style>
   </defs>

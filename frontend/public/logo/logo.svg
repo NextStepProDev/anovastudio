@@ -7,7 +7,9 @@
       }
 
       .cls-2 {
-        fill: #d0b8a7;
+        /* Patrz logo-compact.svg — ten sam akcent, żeby stopka i belka menu
+           miały jeden logotyp; na paper-warm beż był jeszcze słabszy (1.4:1). */
+        fill: #9c6b33;
       }
     </style>
   </defs>
