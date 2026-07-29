@@ -3,7 +3,11 @@
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 
-export type HeroSlide = { desktop: string; mobile: string; alt: string };
+export type HeroSlide =
+  /** Kadr fotograficzny — osobny plik na mobile i desktop (art direction). */
+  | { kind?: "photo"; desktop: string; mobile: string; alt: string }
+  /** Plansza brandowa — logotyp na oświetlonej ścianie, zamiast zdjęcia. */
+  | { kind: "brand"; alt: string };
 
 // Docelowe powiększenie kadru w efekcie Ken Burns (aktywny slajd powoli dojeżdża tu).
 const KEN_BURNS_SCALE = 1.14;
@@ -17,7 +21,7 @@ function SlideImage({
   slide,
   eager,
 }: {
-  slide: HeroSlide;
+  slide: Extract<HeroSlide, { desktop: string }>;
   eager: boolean;
 }) {
   return (
@@ -34,6 +38,42 @@ function SlideImage({
         decoding="async"
       />
     </picture>
+  );
+}
+
+/**
+ * Plansza otwierająca rotację: logotyp na oświetlonej ścianie (`.plaster`) z ciepłą
+ * poświatą pod znakiem. To nie jest zdjęcie, więc zamiast `object-cover` dostaje
+ * własny layout — znak siedzi tam, gdzie kremowy welon spod tekstu go nie zmywa:
+ * na mobile w czystym pasie u góry kadru, na desktopie przy prawej krawędzi.
+ * Wersja `logo-compact` (bez claimu), bo claim powtarza już kicker nad nagłówkiem.
+ */
+function BrandSlide({ alt }: { alt: string }) {
+  return (
+    <div className="plaster absolute inset-0">
+      <div className="absolute left-1/2 top-[9%] w-[54%] max-w-[210px] -translate-x-1/2 md:left-auto md:right-[7%] md:top-1/2 md:w-[27%] md:max-w-[360px] md:translate-x-0 md:-translate-y-1/2">
+        <div aria-hidden className="halo absolute -inset-[40%]" />
+        {/* zwykły <img>: to SVG, więc optymalizator next/image nic tu nie wnosi */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo/logo-compact.svg"
+          alt={alt}
+          width={472}
+          height={339}
+          className="relative w-full"
+          decoding="async"
+        />
+      </div>
+    </div>
+  );
+}
+
+/** Rozdziela oba typy slajdów — zdjęcie albo planszę brandową. */
+function Slide({ slide, eager }: { slide: HeroSlide; eager: boolean }) {
+  return slide.kind === "brand" ? (
+    <BrandSlide alt={slide.alt} />
+  ) : (
+    <SlideImage slide={slide} eager={eager} />
   );
 }
 
@@ -62,8 +102,12 @@ export default function HeroCarousel({
   }, [reduceMotion, slides.length, interval]);
 
   if (reduceMotion || slides.length < 2) {
-    return <SlideImage slide={slides[0]} eager />;
+    return <Slide slide={slides[0]} eager />;
   }
+
+  // LCP-em jest pierwszy KADR, a nie plansza brandowa (ta jest czystym SVG), więc
+  // zachłannie ładujemy pierwsze prawdziwe zdjęcie w kolejce.
+  const firstPhoto = slides.findIndex((slide) => slide.kind !== "brand");
 
   // Zoom trwa nieco dłużej niż czas ekspozycji + przenikanie, żeby ruch był ciągły.
   const zoomDuration = (interval + 1100) / 1000;
@@ -74,7 +118,7 @@ export default function HeroCarousel({
         const active = i === index;
         return (
           <motion.div
-            key={slide.desktop}
+            key={i}
             className="absolute inset-0"
             initial={false}
             animate={{ opacity: active ? 1 : 0 }}
@@ -90,7 +134,7 @@ export default function HeroCarousel({
                 ease: active ? "linear" : "easeOut",
               }}
             >
-              <SlideImage slide={slide} eager={i === 0} />
+              <Slide slide={slide} eager={i === firstPhoto} />
             </motion.div>
           </motion.div>
         );

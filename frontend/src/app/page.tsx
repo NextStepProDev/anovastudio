@@ -7,6 +7,10 @@ import HeroCarousel, { type HeroSlide } from "@/components/HeroCarousel";
 // (IMG_4670 fizjoterapia / IMG_4640 masaż / IMG_4600 trening).
 const heroSlides: HeroSlide[] = [
   {
+    kind: "brand",
+    alt: "Anova Studio — fizjoterapia, masaż, trening",
+  },
+  {
     desktop: "/images/hero.jpg",
     mobile: "/images/hero-mobile-1.jpg",
     alt: "Fizjoterapeutka podczas pracy z pacjentem w Anova Studio",
