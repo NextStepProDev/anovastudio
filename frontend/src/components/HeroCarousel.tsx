@@ -75,8 +75,9 @@ function BrandSlide({ alt }: { alt: string }) {
           wysokość to wysokość hero minus miejsce bloku tekstu. Blok jest w praktyce
           stały (~380–410 px), więc odejmujemy 430 px zapasu i ograniczamy znak przez
           `max-h-full`: na iPhonie SE zostaje tu tylko ~176 px, więc logo samo maleje
-          zamiast wejść w napisy; na wyższych ekranach rośnie. */}
-      <div className="absolute inset-x-0 top-0 flex h-[calc(100%-430px)] items-center justify-center px-6 md:hidden">
+          zamiast wejść w napisy; na wyższych ekranach rośnie. `pt-6` pilnuje, żeby na
+          najniższych ekranach znak nie kleił się do belki menu. */}
+      <div className="absolute inset-x-0 top-0 flex h-[calc(100%-430px)] items-center justify-center px-6 pb-2 pt-6 md:hidden">
         <div aria-hidden className="halo absolute inset-0" />
         {/* zwykły <img>: to SVG, więc optymalizator next/image nic tu nie wnosi */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -167,6 +168,11 @@ export default function HeroCarousel({
     <>
       {slides.map((slide, i) => {
         const active = i === index;
+        // Ken Burns tylko dla zdjęć. Skalowanie idzie od środka kadru, więc na planszy
+        // brandowej wypychało logo (siedzące w górnym pasie) do góry — na mobile znak
+        // wjeżdżał pod belkę menu i się ucinał. Logotyp i tak nie zyskuje na zoomie;
+        // planszę animuje samo przenikanie.
+        const zooms = slide.kind !== "brand";
         return (
           <motion.div
             key={i}
@@ -179,7 +185,7 @@ export default function HeroCarousel({
             <motion.div
               className="absolute inset-0"
               initial={{ scale: 1 }}
-              animate={{ scale: active ? KEN_BURNS_SCALE : 1 }}
+              animate={{ scale: active && zooms ? KEN_BURNS_SCALE : 1 }}
               transition={{
                 duration: active ? zoomDuration : 0.8,
                 ease: active ? "linear" : "easeOut",
