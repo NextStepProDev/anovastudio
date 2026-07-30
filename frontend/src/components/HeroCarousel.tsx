@@ -23,6 +23,47 @@ const BRAND_MARK_SCALE = 1.05;
 /** Tytułówka wisi krócej niż kadr — to nie zdjęcie, nie ma się w co wpatrywać. */
 const BRAND_HOLD_RATIO = 2 / 3;
 
+/** Wejście znaku: wyłania się z rozmycia i lekko się unosi. */
+const BRAND_ENTRY_DURATION = 0.9;
+const BRAND_ENTRY_BLUR = "blur(8px)";
+const BRAND_ENTRY_RISE = 12;
+
+/** Smuga światła: startuje po wejściu znaku i raz przez niego przejeżdża. */
+const SHEEN_DELAY = BRAND_ENTRY_DURATION + 0.3;
+const SHEEN_DURATION = 1.5;
+/** Skąd/dokąd jedzie smuga — z zapasem, żeby wjechała i zjechała za kadr. */
+const SHEEN_TRAVEL = "115%";
+
+/**
+ * Sama smuga: wąskie ciepłe pasmo w poprzek pudełka, z jaśniejszym rdzeniem.
+ * Kąt 100° (a nie 90°) daje ukos, jak refleks światła padającego z góry.
+ */
+const SHEEN_GRADIENT = `linear-gradient(
+  100deg,
+  transparent 38%,
+  color-mix(in srgb, var(--color-glow) 70%, transparent) 47%,
+  color-mix(in srgb, white 62%, var(--color-glow)) 50%,
+  color-mix(in srgb, var(--color-glow) 70%, transparent) 53%,
+  transparent 62%
+)`;
+
+/**
+ * Maska w kształcie logotypu — dzięki niej smuga świeci TYLKO w obrębie znaku,
+ * a nie w prostokącie wokół niego. `contain` + `center` to dokładnie to samo
+ * kadrowanie, co `object-contain` na <img> pod spodem, więc maska trzyma się
+ * znaku niezależnie od proporcji pudełka.
+ */
+const MARK_MASK = {
+  maskImage: "url(/logo/logo-compact.svg)",
+  WebkitMaskImage: "url(/logo/logo-compact.svg)",
+  maskSize: "contain",
+  WebkitMaskSize: "contain",
+  maskPosition: "center",
+  WebkitMaskPosition: "center",
+  maskRepeat: "no-repeat",
+  WebkitMaskRepeat: "no-repeat",
+} as const;
+
 /** Ile ten slajd ma być na ekranie, w ms. */
 function holdOf(slide: HeroSlide, interval: number) {
   return slide.kind === "brand"
@@ -85,33 +126,113 @@ function PhotoVeil() {
  * Znak dostaje wyłącznie ten obszar kadru, którego nie zajmuje blok tekstu, i skaluje
  * się DO NIEGO — nigdy nie jest wymiarowany procentem ekranu, bo blok tekstu ma
  * szerokość i wysokość w pikselach i przy takim liczeniu wchodzi na napisy.
+ *
+ * Ruch planszy to trzy warstwy, wszystkie ze „światła", nie z kształtu:
+ * 1. znak wyłania się z rozmycia i lekko unosi (wejście),
+ * 2. ciepła smuga raz przejeżdża po samych literach (maska w kształcie logotypu),
+ * 3. poświata pod znakiem powoli oddycha (`BrandHalo`).
  */
 function BrandMark({
   alt,
   active,
+  still,
   duration,
   className,
 }: {
   alt: string;
   active: boolean;
+  still: boolean;
   duration: number;
   className: string;
 }) {
-  return (
-    // zwykły <img>, nie next/image: to SVG, optymalizator nic tu nie wnosi
-    <motion.img
+  // zwykły <img>, nie next/image: to SVG, optymalizator nic tu nie wnosi
+  const mark = (
+    <img
       src="/logo/logo-compact.svg"
       alt={alt}
       width={472}
       height={339}
-      className={className}
+      className="h-full w-full object-contain"
       decoding="async"
-      initial={{ scale: 1 }}
-      animate={{ scale: active ? BRAND_MARK_SCALE : 1 }}
+    />
+  );
+
+  // prefers-reduced-motion (albo jeden slajd): znak stoi w docelowym stanie, bez
+  // wejścia i bez smugi — inaczej zostałby rozmyty i przezroczysty na zawsze
+  if (still) {
+    return <div className={className}>{mark}</div>;
+  }
+
+  return (
+    <motion.div
+      className={className}
+      initial={{ scale: 1, opacity: 0, y: BRAND_ENTRY_RISE, filter: BRAND_ENTRY_BLUR }}
+      animate={
+        active
+          ? { scale: BRAND_MARK_SCALE, opacity: 1, y: 0, filter: "blur(0px)" }
+          : { scale: 1, opacity: 0, y: BRAND_ENTRY_RISE, filter: BRAND_ENTRY_BLUR }
+      }
+      // każda cecha ma własne tempo: zoom to powolny podjazd na całą ekspozycję,
+      // wejście (rozmycie / krycie / unos) jest krótkie i domyka się na starcie
       transition={{
-        duration: active ? duration : 0.8,
-        ease: active ? "linear" : "easeOut",
+        scale: { duration: active ? duration : 0.8, ease: active ? "linear" : "easeOut" },
+        opacity: { duration: active ? BRAND_ENTRY_DURATION : 0.5, ease: "easeOut" },
+        filter: { duration: active ? BRAND_ENTRY_DURATION : 0.5, ease: "easeOut" },
+        y: { duration: active ? BRAND_ENTRY_DURATION : 0.5, ease: [0.22, 1, 0.36, 1] },
       }}
+    >
+      {mark}
+      {/* smuga w masce znaku — leży NAD logotypem, ale świeci tylko w jego literach */}
+      <div aria-hidden className="pointer-events-none absolute inset-0" style={MARK_MASK}>
+        <motion.div
+          className="h-full w-full"
+          style={{ background: SHEEN_GRADIENT }}
+          initial={{ x: `-${SHEEN_TRAVEL}` }}
+          animate={{ x: active ? SHEEN_TRAVEL : `-${SHEEN_TRAVEL}` }}
+          transition={
+            active
+              ? { duration: SHEEN_DURATION, delay: SHEEN_DELAY, ease: "easeInOut" }
+              : { duration: 0 } // reset poza kadrem, gdy slajd i tak zgasł
+          }
+        />
+      </div>
+    </motion.div>
+  );
+}
+
+/**
+ * Ciepła poświata pod znakiem — na aktywnym slajdzie powoli „oddycha" (jak światło
+ * z okna na ścianie), poza nim przygasa. To ona nosi ruch tła; sam znak zostaje
+ * czytelny.
+ */
+function BrandHalo({
+  active,
+  still,
+  className,
+}: {
+  active: boolean;
+  still: boolean;
+  className: string;
+}) {
+  if (still) {
+    return <div aria-hidden className={`halo ${className}`} />;
+  }
+
+  return (
+    <motion.div
+      aria-hidden
+      className={`halo ${className}`}
+      initial={{ opacity: 0.55, scale: 0.95 }}
+      animate={
+        active
+          ? { opacity: [0.7, 1, 0.7], scale: [1, 1.06, 1] }
+          : { opacity: 0.55, scale: 0.95 }
+      }
+      transition={
+        active
+          ? { duration: 7, ease: "easeInOut", repeat: Infinity }
+          : { duration: 0.8, ease: "easeOut" }
+      }
     />
   );
 }
@@ -119,10 +240,12 @@ function BrandMark({
 function BrandSlide({
   alt,
   active,
+  still,
   duration,
 }: {
   alt: string;
   active: boolean;
+  still: boolean;
   duration: number;
 }) {
   return (
@@ -132,14 +255,21 @@ function BrandSlide({
           stały (~380–410 px), więc odejmujemy 430 px zapasu i ograniczamy znak przez
           `max-h-full`: na iPhonie SE zostaje tu tylko ~176 px, więc logo samo maleje
           zamiast wejść w napisy; na wyższych ekranach rośnie. `pt-6` pilnuje, żeby na
-          najniższych ekranach znak nie kleił się do belki menu. */}
+          najniższych ekranach znak nie kleił się do belki menu.
+
+          Znak dostaje teraz pełne pudełko (`h-full w-[68%]`) i skaluje się w nim przez
+          `object-contain`, zamiast być wymiarowany samymi ograniczeniami na <img>.
+          Rozmiar wychodzi ten sam (mniejsze z: wysokość pasa / 68% szerokości), ale
+          pudełko ma definitywne wymiary — a bez nich maska smugi nie miałaby do czego
+          się przyłożyć. */}
       <div className="absolute inset-x-0 top-0 flex h-[calc(100%-430px)] items-center justify-center px-6 pb-2 pt-6 md:hidden">
-        <div aria-hidden className="halo absolute inset-0" />
+        <BrandHalo active={active} still={still} className="absolute inset-0" />
         <BrandMark
           alt={alt}
           active={active}
+          still={still}
           duration={duration}
-          className="relative max-h-full w-auto max-w-[68%]"
+          className="relative h-full w-[68%]"
         />
       </div>
 
@@ -150,12 +280,15 @@ function BrandSlide({
           szerokości okna i każde „prawe 14%" na niego wchodziło. */}
       <div className="mx-auto hidden h-full max-w-6xl items-center justify-end px-5 md:flex">
         <div className="relative w-[calc(100%-37.5rem)] max-w-[500px]">
-          <div aria-hidden className="halo absolute -inset-[40%]" />
+          <BrandHalo active={active} still={still} className="absolute -inset-[40%]" />
+          {/* wysokość z proporcji logotypu — dokładnie to, co dawał <img w-full>,
+              tylko jawnie, żeby maska smugi miała pudełko o znanym kształcie */}
           <BrandMark
             alt={alt}
             active={active}
+            still={still}
             duration={duration}
-            className="relative w-full"
+            className="relative aspect-[472/339] w-full"
           />
         </div>
       </div>
@@ -168,15 +301,23 @@ function Slide({
   slide,
   eager,
   active,
+  still = false,
   duration,
 }: {
   slide: HeroSlide;
   eager: boolean;
   active: boolean;
+  /** Rotacja wyłączona (reduced motion / jeden slajd) — plansza renderuje się statycznie. */
+  still?: boolean;
   duration: number;
 }) {
   return slide.kind === "brand" ? (
-    <BrandSlide alt={slide.alt} active={active} duration={duration} />
+    <BrandSlide
+      alt={slide.alt}
+      active={active}
+      still={still}
+      duration={duration}
+    />
   ) : (
     <SlideImage slide={slide} eager={eager} />
   );
@@ -212,7 +353,7 @@ export default function HeroCarousel({
     const only = slides[0];
     return (
       <>
-        <Slide slide={only} eager active={false} duration={0} />
+        <Slide slide={only} eager active={false} still duration={0} />
         {only.kind !== "brand" && <PhotoVeil />}
       </>
     );
