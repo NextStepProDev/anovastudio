@@ -6,7 +6,12 @@
       }
 
       .cls-2 {
-        fill: #d0b8a7;
+        /* Patrz logo-compact.svg — ikona zakładki dostaje ten sam markowy
+           akcent, bo oryginalny beż #d0b8a7 gubił ludzika zarówno na białym
+           pasku zakładek (1,9:1), jak i na kremowym tle ikony iOS (1,7:1).
+           Oryginalne pliki brandowe (logo-mark / logo-black / logo-white)
+           zostają bez zmian. */
+        fill: #9c6b33;
       }
     </style>
   </defs>
