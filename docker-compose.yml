@@ -7,12 +7,12 @@ services:
       POSTGRES_DB: strapi
       POSTGRES_USER: strapi
       POSTGRES_PASSWORD: strapi_dev_password
-    # Host port 5433 (not the default 5432) so this dedicated Anova database
-    # coexists with the shared next-step-pro dev Postgres that other local
-    # projects (e.g. climbing-hub) keep on 5432. Container-internal port stays
-    # 5432; backend/.env sets DATABASE_PORT=5433 to match the host mapping.
+    # Host port 5434 (not the default 5432) so this dedicated Anova database
+    # coexists with the other local dev databases: climbing-hub holds 5432 and
+    # fire-academy holds 5433. Container-internal port stays 5432; backend/.env
+    # sets DATABASE_PORT=5434 to match the host mapping.
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
