@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 import { BRAND, CONTACT } from "@/lib/contact";
+import { pageMetadata } from "@/lib/seo";
 import Reveal from "@/components/Reveal";
 import Watermark from "@/components/Watermark";
 
-export const metadata: Metadata = {
-  title: "Kontakt",
-  description: `Skontaktuj się z gabinetem ${BRAND} w Libiążu — umów wizytę telefonicznie lub napisz do nas.`,
-};
+// Funkcja, nie stała: resolver metadanych Next-a zjada przekazany obiekt,
+// a strona bywa renderowana kilka razy w jednym procesie (gubiła się grafika karty).
+export function generateMetadata(): Metadata {
+  return pageMetadata({
+    title: "Kontakt",
+    description: `Skontaktuj się z gabinetem ${BRAND} w Libiążu, ul. 1 Maja 5C — umów wizytę telefonicznie lub napisz do nas.`,
+    path: "/kontakt",
+  });
+}
 
 export default function KontaktPage() {
   return (

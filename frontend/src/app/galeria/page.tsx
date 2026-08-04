@@ -2,12 +2,18 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { getGalleryPhotos, strapiMediaUrl } from "@/lib/strapi";
 import { BRAND } from "@/lib/contact";
+import { pageMetadata } from "@/lib/seo";
 import Reveal from "@/components/Reveal";
 
-export const metadata: Metadata = {
-  title: "Galeria",
-  description: `Zobacz gabinet ${BRAND} w Libiążu — wnętrza, sprzęt i nasza codzienna praca z pacjentami.`,
-};
+// Funkcja, nie stała: resolver metadanych Next-a zjada przekazany obiekt,
+// a strona bywa renderowana kilka razy w jednym procesie (gubiła się grafika karty).
+export function generateMetadata(): Metadata {
+  return pageMetadata({
+    title: "Galeria",
+    description: `Zobacz gabinet ${BRAND} w Libiążu — wnętrza, sprzęt i nasza codzienna praca z pacjentami.`,
+    path: "/galeria",
+  });
+}
 
 export default async function GaleriaPage() {
   const photos = await getGalleryPhotos();

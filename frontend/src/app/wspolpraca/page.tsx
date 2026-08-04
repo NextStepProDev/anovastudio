@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND, CONTACT } from "@/lib/contact";
+import { pageMetadata } from "@/lib/seo";
 import { PARTNERS } from "@/lib/partners";
 import Reveal from "@/components/Reveal";
 import Watermark from "@/components/Watermark";
 
-export const metadata: Metadata = {
-  title: "Współpraca",
-  description: `Współpraca z gabinetem ${BRAND} w Libiążu — oferta dla klubów sportowych, firm i grup zorganizowanych.`,
-};
+// Funkcja, nie stała: resolver metadanych Next-a zjada przekazany obiekt,
+// a strona bywa renderowana kilka razy w jednym procesie (gubiła się grafika karty).
+export function generateMetadata(): Metadata {
+  return pageMetadata({
+    title: "Współpraca",
+    description: `Współpraca z gabinetem ${BRAND} w Libiążu — oferta dla klubów sportowych, firm i grup zorganizowanych.`,
+    path: "/wspolpraca",
+  });
+}
 
 const audiences = [
   {

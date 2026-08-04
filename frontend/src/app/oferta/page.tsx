@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND } from "@/lib/contact";
+import { pageMetadata } from "@/lib/seo";
 import OfferMenu from "@/components/OfferMenu";
 import Reveal from "@/components/Reveal";
 import Watermark from "@/components/Watermark";
 
-export const metadata: Metadata = {
-  title: "Oferta i cennik",
-  description: `Oferta gabinetu ${BRAND} w Libiążu — fizjoterapia ortopedyczna i sportowa, gimnastyka korekcyjna, trening medyczny, kinesiotaping, masaż. Sprawdź cennik.`,
-};
+// Funkcja, nie stała: resolver metadanych Next-a zjada przekazany obiekt,
+// a strona bywa renderowana kilka razy w jednym procesie (gubiła się grafika karty).
+export function generateMetadata(): Metadata {
+  return pageMetadata({
+    title: "Oferta i cennik",
+    description: `Oferta gabinetu ${BRAND} w Libiążu — fizjoterapia ortopedyczna i sportowa, gimnastyka korekcyjna, trening medyczny, kinesiotaping, masaż. Sprawdź cennik.`,
+    path: "/oferta",
+  });
+}
 
 // Miękka winieta wtapiająca hero w tło .plaster ze WSZYSTKICH stron (prawa
 // najszerzej, 42% — logo/ściana łagodnie rozpływają się w tle; lewa 20%) —
