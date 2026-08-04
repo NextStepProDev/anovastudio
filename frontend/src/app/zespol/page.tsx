@@ -2,14 +2,20 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { getStaff, strapiMediaUrl } from "@/lib/strapi";
 import { BRAND } from "@/lib/contact";
+import { pageMetadata } from "@/lib/seo";
 import Reveal from "@/components/Reveal";
 import StaffDetails from "@/components/StaffDetails";
 import Watermark from "@/components/Watermark";
 
-export const metadata: Metadata = {
-  title: "Zespół",
-  description: `Poznaj zespół ${BRAND} — doświadczonych fizjoterapeutów, którzy pomogą Ci wrócić do pełnej sprawności.`,
-};
+// Funkcja, nie stała: resolver metadanych Next-a zjada przekazany obiekt,
+// a strona bywa renderowana kilka razy w jednym procesie (gubiła się grafika karty).
+export function generateMetadata(): Metadata {
+  return pageMetadata({
+    title: "Zespół",
+    description: `Poznaj zespół ${BRAND} — doświadczonych fizjoterapeutów, którzy pomogą Ci wrócić do pełnej sprawności.`,
+    path: "/zespol",
+  });
+}
 
 export default async function ZespolPage() {
   const staff = await getStaff();
