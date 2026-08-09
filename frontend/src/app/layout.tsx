@@ -19,46 +19,64 @@ const fraunces = Fraunces({
   style: ["normal", "italic"],
 });
 
+/**
+ * Strony bez treści z CMS-a (`/`, `/oferta`, `/kontakt`, `/wspolpraca`) były w pełni
+ * statyczne, więc rok w stopce (`new Date().getFullYear()`) wypalał się w obrazie
+ * przy budowaniu i 1 stycznia pokazywałby stary rocznik aż do następnego deployu.
+ * Doba odświeżania to na wizytówce zerowy koszt, a problem znika u źródła. Strony
+ * pobierające dane ze Strapi mają własne, krótsze okno (60 s w lib/strapi.ts) —
+ * Next bierze mniejszą z wartości, więc ta stała ich nie spowalnia.
+ */
+export const revalidate = 86400;
+
 const HOME_TITLE = `${BRAND} — Rehabilitacja ortopedyczna i sportowa | Libiąż`;
 const HOME_DESCRIPTION = `Gabinet fizjoterapii ortopedycznej i sportowej ${BRAND} w Libiążu. Dbamy o zdrowie każdego pacjenta — fizjoterapia, gimnastyka korekcyjna, trening medyczny, kinesiotaping, masaż.`;
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: HOME_TITLE,
-    template: `%s | ${BRAND}`,
-  },
-  description: HOME_DESCRIPTION,
-  applicationName: BRAND,
-  // Podstrony nadpisują to własnym canonical (patrz lib/seo.ts); tu obsługa strony głównej.
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    siteName: BRAND,
-    locale: "pl_PL",
-    url: "/",
-    title: HOME_TITLE,
+// Funkcja, nie stała — z tego samego powodu, dla którego podstrony mają
+// `generateMetadata()` (patrz lib/seo.ts): resolver metadanych Next-a zjada
+// przekazany obiekt, a layout renderuje się raz na każdą stronę w procesie.
+// Przy `export const metadata` obiekt karty powstawał jeden raz, przy ładowaniu
+// modułu, i był współdzielony przez wszystkie rendery — czyli dokładnie ten
+// wzorzec, który na podstronach świadomie porzucono.
+export function generateMetadata(): Metadata {
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: HOME_TITLE,
+      template: `%s | ${BRAND}`,
+    },
     description: HOME_DESCRIPTION,
-    images: [ogImage()],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: HOME_TITLE,
-    description: HOME_DESCRIPTION,
-    images: [ogImage()],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    // Zgoda na duży podgląd zdjęcia i pełny fragment tekstu w wynikach Google.
-    googleBot: {
+    applicationName: BRAND,
+    // Podstrony nadpisują to własnym canonical (patrz lib/seo.ts); tu obsługa strony głównej.
+    alternates: { canonical: "/" },
+    openGraph: {
+      type: "website",
+      siteName: BRAND,
+      locale: "pl_PL",
+      url: "/",
+      title: HOME_TITLE,
+      description: HOME_DESCRIPTION,
+      images: [ogImage()],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: HOME_TITLE,
+      description: HOME_DESCRIPTION,
+      images: [ogImage()],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      // Zgoda na duży podgląd zdjęcia i pełny fragment tekstu w wynikach Google.
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-};
+  };
+}
 
 export default function RootLayout({
   children,
@@ -78,10 +96,18 @@ export default function RootLayout({
             __html: JSON.stringify(localBusinessSchema()),
           }}
         />
+        {/* Skok do treści dla klawiatury i czytników ekranu — niewidoczny, dopóki
+            nie dostanie fokusu, wtedy wjeżdża nad belkę menu (z-60 > sticky header). */}
+        <a
+          href="#tresc"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:bg-ink focus:px-5 focus:py-3 focus:font-display focus:text-sm focus:font-semibold focus:text-paper"
+        >
+          Przejdź do treści
+        </a>
         <Header />
         {/* min-h pushes the footer below the fold on short pages (100svh minus the 82px
             sticky header); flex lets full-bleed page sections grow into the leftover space. */}
-        <main className="flex min-h-[calc(100svh-82px)] flex-1 flex-col">
+        <main id="tresc" className="flex min-h-[calc(100svh-82px)] flex-1 flex-col">
           {children}
         </main>
         <Footer />

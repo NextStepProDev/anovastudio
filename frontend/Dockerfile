@@ -28,6 +28,12 @@ ENV PORT=3000
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public
+# Katalog cache MUSI istnieć w obrazie i należeć do node. Produkcja montuje tu
+# nazwany wolumen (anovastudio_image_cache_prod), a Docker tworzy punkt montowania
+# jako root, jeśli nie znajdzie go w obrazie — wtedy optymalizator obrazów traci
+# prawo zapisu i przelicza zdjęcia od nowa przy każdym żądaniu. Istniejący katalog
+# sprawia, że wolumen dziedziczy właściciela.
+RUN mkdir -p /app/.next/cache && chown -R node:node /app/.next
 USER node
 EXPOSE 3000
 CMD ["node", "server.js"]

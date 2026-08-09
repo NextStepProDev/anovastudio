@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 /**
  * Dekoracyjny znak wodny — sam mark ANOVA (trójkąt „A" z sylwetką) WYTŁOCZONY
  * w powierzchni sekcji. Wrażenie 3D daje wyłącznie światłocień: jasny rant od
@@ -23,13 +21,11 @@ export default function Watermark({
   className = "",
   surface = "paper",
   id = "anova-emboss",
-  style,
 }: {
   className?: string;
   surface?: "paper" | "paperWarm";
   /** unikalny id filtra — nadpisz tylko gdy dwa znaki lądują w jednym dokumencie */
   id?: string;
-  style?: CSSProperties;
 }) {
   const surfaceClass = surface === "paperWarm" ? "text-[#e8dfd2]" : "text-paper";
 
@@ -38,10 +34,7 @@ export default function Watermark({
       aria-hidden
       className="pointer-events-none absolute inset-0 -z-10 select-none overflow-hidden"
     >
-      <span
-        className={`absolute aspect-[186/203] ${surfaceClass} ${className}`}
-        style={style}
-      >
+      <span className={`absolute aspect-[186/203] ${surfaceClass} ${className}`}>
         {/* viewBox = bbox marku + ~8j paddingu z każdej strony (żeby cień/rant nie
             były przycięte przez krawędź viewportu SVG). */}
         <svg

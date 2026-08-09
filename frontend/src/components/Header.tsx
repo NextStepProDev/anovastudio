@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -18,6 +18,17 @@ const navLinks = [
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+
+  // Escape zamyka menu mobilne. Kliknięcie w link zamyka je samo (onClick niżej),
+  // ale bez tego jedynym wyjściem dla klawiatury było przejście przez całą listę.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-paper/90 backdrop-blur-md">
@@ -43,11 +54,14 @@ export default function Header() {
           />
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav aria-label="Główne" className="hidden items-center gap-8 md:flex">
           {navLinks.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
+              // aria-current: aktywna pozycja była do tej pory oznaczona samym
+              // kolorem, więc czytnik ekranu nie miał skąd wiedzieć, gdzie jesteśmy
+              aria-current={pathname === href ? "page" : undefined}
               className={`relative font-display text-base tracking-wide transition-colors after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:bg-accent after:transition-transform after:duration-300 hover:text-ink hover:after:scale-x-100 ${
                 pathname === href
                   ? "text-ink after:scale-x-100"
@@ -85,12 +99,16 @@ export default function Header() {
       </div>
 
       {menuOpen && (
-        <nav className="animate-menu-in border-t border-line bg-paper md:hidden">
+        <nav
+          aria-label="Główne (mobilne)"
+          className="animate-menu-in border-t border-line bg-paper md:hidden"
+        >
           <ul className="flex flex-col px-5 py-3">
             {navLinks.map(({ href, label }) => (
               <li key={href}>
                 <Link
                   href={href}
+                  aria-current={pathname === href ? "page" : undefined}
                   onClick={() => setMenuOpen(false)}
                   className={`block py-3 font-display text-base ${
                     pathname === href ? "text-accent" : "text-ink-soft"

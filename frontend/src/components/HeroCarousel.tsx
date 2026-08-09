@@ -71,10 +71,22 @@ function holdOf(slide: HeroSlide, interval: number) {
     : interval;
 }
 
+/** Ścieżka do wariantu obok JPEG-a: /images/hero.jpg → /images/hero.avif */
+const variant = (jpeg: string, ext: "avif" | "webp") =>
+  jpeg.replace(/\.jpe?g$/i, `.${ext}`);
+
 /**
  * Zdjęcie z art direction: mobile dostaje pionowy kadr, desktop poziomy — przez
- * <picture> z media, więc ładuje się TYLKO pasujący plik. Pierwszy kadr ładowany
- * zachłannie (LCP), pozostałe leniwie.
+ * <picture> z media, więc ładuje się TYLKO pasujący plik.
+ *
+ * Każdy kadr leży w trzech formatach (AVIF / WebP / JPEG, generowane skryptem —
+ * patrz README frontendu). Przeglądarka bierze pierwszy `<source>`, który pasuje
+ * i który umie odczytać, więc kolejność jest tu znacząca: od najlżejszego
+ * formatu do najbardziej zgodnego. Same JPEG-i ważyły ~240 KB na kadr; AVIF
+ * schodzi do ~40 KB przy tej samej ostrości skóry i faktury.
+ *
+ * Świadomie zwykły <picture>, a nie next/image: art direction wymaga DWÓCH różnych
+ * plików na ten sam slajd, a next/image z ukrywaniem przez CSS pobrałby oba kadry.
  */
 function SlideImage({
   slide,
@@ -86,8 +98,20 @@ function SlideImage({
   return (
     <picture>
       {/* desktop (≥768px) — poziomy kadr */}
+      <source
+        media="(min-width: 768px)"
+        type="image/avif"
+        srcSet={variant(slide.desktop, "avif")}
+      />
+      <source
+        media="(min-width: 768px)"
+        type="image/webp"
+        srcSet={variant(slide.desktop, "webp")}
+      />
       <source media="(min-width: 768px)" srcSet={slide.desktop} />
-      {/* mobile — pionowy kadr (domyślny <img>) */}
+      {/* mobile — pionowy kadr (JPEG jako domyślny <img> = ostatnia deska ratunku) */}
+      <source type="image/avif" srcSet={variant(slide.mobile, "avif")} />
+      <source type="image/webp" srcSet={variant(slide.mobile, "webp")} />
       <img
         src={slide.mobile}
         alt={slide.alt}
@@ -336,16 +360,36 @@ export default function HeroCarousel({
   interval?: number;
 }) {
   const reduceMotion = useReducedMotion();
-  const [index, setIndex] = useState(0);
+
+  /**
+   * Aktywny kadr i „dokąd domontowaliśmy" w jednym stanie — bo to jedna decyzja,
+   * podejmowana w jednym miejscu (przy przewinięciu slajdu).
+   *
+   * Po co `mountedThrough`: wszystkie slajdy naraz w drzewie znaczyły, że przy
+   * pierwszym wejściu przeglądarka ściągała KOMPLET kadrów. `loading="lazy"` nic
+   * tu nie daje — slajdy są w polu widzenia (przezroczyste, ale nie ukryte),
+   * a odraczane jest tylko to, co poza ekranem. Trzymamy więc jeden slajd zapasu
+   * do przodu (zdąży się wczytać przed przenikaniem) i nigdy nie odmontowujemy,
+   * żeby po zapętleniu rotacji kadry nie znikały i nie wracały.
+   */
+  const [{ index, mountedThrough }, setRotation] = useState({
+    index: 0,
+    mountedThrough: 1,
+  });
 
   // setTimeout, nie setInterval: czas ekspozycji zależy od slajdu (tytułówka wisi
   // krócej), więc odliczanie trzeba uzbrajać od nowa po każdej zmianie kadru.
   useEffect(() => {
     if (reduceMotion || slides.length < 2) return;
-    const id = setTimeout(
-      () => setIndex((i) => (i + 1) % slides.length),
-      holdOf(slides[index], interval),
-    );
+    const id = setTimeout(() => {
+      setRotation((current) => {
+        const next = (current.index + 1) % slides.length;
+        return {
+          index: next,
+          mountedThrough: Math.max(current.mountedThrough, next + 1),
+        };
+      });
+    }, holdOf(slides[index], interval));
     return () => clearTimeout(id);
   }, [index, reduceMotion, slides, interval]);
 
@@ -366,6 +410,7 @@ export default function HeroCarousel({
   return (
     <>
       {slides.map((slide, i) => {
+        if (i > mountedThrough) return null;
         const active = i === index;
         // Ken Burns (na całym kadrze) tylko dla zdjęć — na planszy brandowej wypychał
         // logo pod belkę menu, więc ona rusza się inaczej: powiększa się sam znak,

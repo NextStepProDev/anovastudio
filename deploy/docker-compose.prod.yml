@@ -88,6 +88,11 @@ services:
     environment:
       # Trzymaj stertę V8 wyraźnie pod mem_limit; zapas na sharp (optymalizacja obrazów)
       NODE_OPTIONS: "--max-old-space-size=160"
+    volumes:
+      # Przetworzone zdjęcia z Media Library. Bez tego wolumenu cache ginął razem
+      # z kontenerem, więc po KAŻDYM deployu wszystkie zdjęcia galerii przeliczały
+      # się od zera — sharpem, na jednym rdzeniu i w 224 MB pamięci.
+      - anovastudio_image_cache_prod:/app/.next/cache
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
       interval: 30s
@@ -95,8 +100,12 @@ services:
       retries: 5
       start_period: 30s
     depends_on:
+      # service_started, NIE service_healthy: frontend jest napisany tak, żeby
+      # przeżyć niedostępny CMS (lib/strapi.ts zwraca puste dane, strony mają stany
+      # puste). Przy twardym warunku zdrowia awaria Strapi — realna na 1 GB RAM —
+      # kładła całą witrynę zamiast zabrać z niej galerię i zespół.
       strapi:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
     logging:
       driver: "json-file"
@@ -130,3 +139,4 @@ services:
 volumes:
   anovastudio_postgres_data_prod:
   anovastudio_uploads_prod:
+  anovastudio_image_cache_prod:

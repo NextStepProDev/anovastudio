@@ -19,6 +19,19 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    ignore:
+      # TypeScript musi zostać na 5.x — tyle używa sam Strapi (@strapi/strapi
+      # zależy od TS 5.9) i pod taką wersję generuje tsconfig. Bump do 7 wszedł
+      # niezauważony, bo `strapi build` kompiluje własnym TS-em; łamał za to
+      # każde `npx tsc` w tym katalogu (`moduleResolution: Node` zniknęło w TS 7).
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      # React 19 wymaga panelu admina Strapi zbudowanego pod 19 — idzie razem
+      # z majorem Strapi, nie osobno.
+      - dependency-name: react
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react-dom
+        update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
         update-types:

@@ -21,11 +21,6 @@
   --color-paper-warm: #e8dfd2;
   --color-sand: #dccbb6;
   --color-line: #d7c9bb;
-  /* Espresso: pozostawione dla ewentualnych ciemnych akcentów (hover CTA), nieużywane
-     jako tło sekcji po przejściu na jasną paletę. */
-  --color-espresso: #3a322a;
-  --color-espresso-soft: #4a4239;
-  --color-espresso-deep: #2b251f;
   --color-accent: #9c6b33;
   --color-accent-dark: #7f5527;
   --color-glow: #e9c795;
@@ -100,11 +95,6 @@ button:not(:disabled),
     box-shadow: 0 0 10px 0 color-mix(in srgb, currentColor 70%, transparent);
   }
 
-  /* Delikatny, jaśniejszy pas beżu do subtelnego oddzielenia sekcji (nie ciemny). */
-  .section-band {
-    @apply bg-paper-warm text-ink;
-  }
-
   .btn {
     @apply inline-flex h-12 items-center justify-center gap-2.5 px-8 font-display text-sm font-semibold tracking-wide transition-all duration-200 active:translate-y-px;
   }
@@ -123,11 +113,6 @@ button:not(:disabled),
      łuki zostały odrzucone jako „nagrobki". Wspólny promień dla hero / Zespołu / Galerii. */
   .photo-frame {
     border-radius: 1.75rem;
-    overflow: hidden;
-  }
-  /* Wariant „opływowy" — miękki, asymetryczny kształt do dużego kadru w hero. */
-  .photo-frame-organic {
-    border-radius: 2.75rem 2.75rem 2.75rem 5rem;
     overflow: hidden;
   }
 

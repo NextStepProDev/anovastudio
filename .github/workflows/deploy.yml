@@ -80,6 +80,11 @@ jobs:
             # it when the image tag is unchanged. Validate and hot-reload explicitly.
             docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
             docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
+            # Każdy deploy zostawia poprzedni obraz frontu i backendu; na dysku tej
+            # maszyny to szybko urasta. Usuwamy TYLKO obrazy bez kontenera (-a) i
+            # starsze niż tydzień, więc poprzednia wersja zostaje pod ewentualny
+            # ręczny rollback. `|| true` — sprzątanie nie ma prawa ubić deployu.
+            docker image prune -af --filter "until=168h" || true
 
       - name: Verify deployment health
         uses: appleboy/ssh-action@v1
@@ -111,14 +116,16 @@ jobs:
         run: |
           # Each value is a space-separated list of acceptable status codes.
           # /api/gallery is a Strapi single type: with no published entry it
-          # returns 404 (not 200 like the empty /api/services collection), which
-          # is valid until the client adds gallery content — so accept both.
+          # returns 404 (not 200 like an empty collection), which is valid until
+          # the client adds gallery content — so accept both.
           declare -A CHECKS=(
             ["${{ vars.SITE_URL }}/"]=200
             ["${{ vars.SITE_URL }}/oferta"]=200
+            ["${{ vars.SITE_URL }}/zespol"]=200
             ["${{ vars.SITE_URL }}/galeria"]=200
+            ["${{ vars.SITE_URL }}/wspolpraca"]=200
             ["${{ vars.SITE_URL }}/kontakt"]=200
-            ["${{ vars.STRAPI_URL }}/api/services"]=200
+            ["${{ vars.STRAPI_URL }}/api/staffs"]=200
             ["${{ vars.STRAPI_URL }}/api/gallery"]="200 404"
           )
           FAILED=0
