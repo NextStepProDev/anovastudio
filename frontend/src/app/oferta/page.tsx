@@ -52,18 +52,26 @@ export default function OfertaPage() {
               przycina boki, dlatego object-position 75%: kadr przesunięty w prawo
               tak, że logo dostaje margines pustej ściany i nie ląduje na krawędzi
               (gdzie zjadałaby je prawa winieta), a wazon nadal widoczny. */}
-          <img
-            src="/images/oferta-hero.jpg"
-            alt=""
-            aria-hidden
-            className="h-auto w-full object-cover object-[75%_center] md:h-[26rem]"
-            style={{
-              maskImage: HERO_VIGNETTE,
-              WebkitMaskImage: HERO_VIGNETTE,
-              maskComposite: "intersect",
-              WebkitMaskComposite: "source-in",
-            }}
-          />
+          {/* display:contents na <picture> — dzięki temu elementem siatki pozostaje
+              samo <img> (z jego wysokością i maską), a <picture> służy wyłącznie do
+              wyboru formatu: AVIF ~41 KB / WebP ~53 KB zamiast 126 KB JPEG-a. */}
+          <picture className="contents">
+            <source type="image/avif" srcSet="/images/oferta-hero.avif" />
+            <source type="image/webp" srcSet="/images/oferta-hero.webp" />
+            <img
+              src="/images/oferta-hero.jpg"
+              alt=""
+              aria-hidden
+              decoding="async"
+              className="h-auto w-full object-cover object-[75%_center] md:h-[26rem]"
+              style={{
+                maskImage: HERO_VIGNETTE,
+                WebkitMaskImage: HERO_VIGNETTE,
+                maskComposite: "intersect",
+                WebkitMaskComposite: "source-in",
+              }}
+            />
+          </picture>
         </div>
       </section>
 

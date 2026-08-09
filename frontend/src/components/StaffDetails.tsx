@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { parseCourses } from "@/lib/strapi";
 
 interface StaffDetailsProps {
   bio?: string | null;
@@ -23,20 +24,22 @@ export default function StaffDetails({
   const paragraphRef = useRef<HTMLParagraphElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const courseList = (courses ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const courseList = parseCourses(courses);
 
+  // Mierzymy WYŁĄCZNIE w stanie zwiniętym. Rozwinięty akapit z definicji nie jest
+  // przycięty, więc pomiar po rozwinięciu zwracał `false` i — u osoby bez wpisanych
+  // kursów — zabierał jedyny powód istnienia przycisku: „Zwiń" znikał, a karta
+  // zostawała rozwinięta na stałe. Pominięcie pomiaru zachowuje ostatni wynik
+  // z pomiaru zwiniętego, czyli tę informację, której naprawdę potrzebujemy.
   useEffect(() => {
     const el = paragraphRef.current;
-    if (!el) return;
+    if (!el || expanded) return;
     const check = () => setOverflowing(el.scrollHeight > el.clientHeight + 1);
     check();
     const observer = new ResizeObserver(check);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [expanded]);
 
   const hasMore = overflowing || courseList.length > 0;
 
@@ -73,9 +76,12 @@ export default function StaffDetails({
             Kursy i szkolenia
           </p>
           <ul className="mt-2 space-y-1 text-sm leading-6 text-ink-soft">
-            {courseList.map((course) => (
+            {/* klucz z indeksem: lista bywa długa (kilkadziesiąt pozycji) i wpisywana
+                ręcznie w CMS-ie, więc powtórzona linia jest realna; kolejność jest
+                stała, bo to zwykły tekst rozbity na wiersze */}
+            {courseList.map((course, index) => (
               <li
-                key={course}
+                key={`${index}-${course}`}
                 className="relative pl-4 before:absolute before:left-0 before:top-[0.6em] before:h-1 before:w-1 before:rounded-full before:bg-accent"
               >
                 {course}

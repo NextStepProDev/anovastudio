@@ -93,30 +93,34 @@ function ServiceRow({ service }: { service: OfferService }) {
         </button>
       </h2>
 
-      {open && (
-        <div id={panelId} className="pb-10 sm:pb-12">
-          <p className="max-w-2xl text-sm leading-7 text-ink-soft md:text-base">
-            {service.lead}
-          </p>
-          <div
-            className={`mt-7 grid gap-x-10 gap-y-7 ${gridColsForScopes(service.scopes.length)}`}
-          >
-            {service.scopes.map((scope) => (
-              <div key={scope.label}>
-                <p className="font-display text-xs font-semibold uppercase tracking-[0.18em] text-ink">
-                  {scope.label}
-                </p>
-                <ScopeList items={scope.items} />
-              </div>
-            ))}
-          </div>
-          {service.footnote && (
-            <p className="mt-7 max-w-2xl text-sm italic leading-6 text-ink-soft">
-              {service.footnote}
-            </p>
-          )}
+      {/* Panel siedzi w drzewie ZAWSZE, zwinięty chowa go atrybut `hidden` — nie
+          warunek `&&`. Renderowanie warunkowe znaczyło, że opis usługi, listy
+          dolegliwości i przypis w ogóle nie trafiały do kodu strony: robot Google
+          nie klika w rozwijane elementy, więc najbogatsza w słowa kluczowe treść
+          całego serwisu była dla wyszukiwarki niewidzialna. Przy okazji działa
+          Ctrl+F i `aria-controls` wskazuje na istniejący element. */}
+      <div id={panelId} hidden={!open} className="pb-10 sm:pb-12">
+        <p className="max-w-2xl text-sm leading-7 text-ink-soft md:text-base">
+          {service.lead}
+        </p>
+        <div
+          className={`mt-7 grid gap-x-10 gap-y-7 ${gridColsForScopes(service.scopes.length)}`}
+        >
+          {service.scopes.map((scope) => (
+            <div key={scope.label}>
+              <p className="font-display text-xs font-semibold uppercase tracking-[0.18em] text-ink">
+                {scope.label}
+              </p>
+              <ScopeList items={scope.items} />
+            </div>
+          ))}
         </div>
-      )}
+        {service.footnote && (
+          <p className="mt-7 max-w-2xl text-sm italic leading-6 text-ink-soft">
+            {service.footnote}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -137,19 +141,19 @@ export default function OfferMenu() {
 
   return (
     <div className="mt-12">
-      <div
-        role="tablist"
-        aria-label="Lokalizacja"
-        className="grid gap-4 sm:grid-cols-2"
-      >
+      {/* Świadomie zwykłe przyciski z `aria-pressed`, a NIE role="tab": pełny wzorzec
+          zakładek ARIA wymaga panelu z role="tabpanel", `aria-controls` i obsługi
+          strzałek. Wcześniej były tu same role bez tych zachowań, więc czytnik ekranu
+          zapowiadał „zakładka 1 z 2" i obiecywał sterowanie, którego nie ma. Dwa
+          przyciski-przełączniki opisują to, czym te kafelki naprawdę są: filtrem. */}
+      <div role="group" aria-label="Lokalizacja" className="grid gap-4 sm:grid-cols-2">
         {LOCATIONS.map((loc) => {
           const selected = active === loc.id;
           return (
             <button
               key={loc.id}
               type="button"
-              role="tab"
-              aria-selected={selected}
+              aria-pressed={selected}
               onClick={() => setActive(loc.id)}
               className={`flex flex-col items-start gap-1 rounded-2xl border px-6 py-5 text-left transition-all ${
                 selected

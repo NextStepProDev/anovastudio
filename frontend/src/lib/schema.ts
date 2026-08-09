@@ -2,7 +2,7 @@ import { BRAND, CONTACT, SITE_URL } from "@/lib/contact";
 import { OFFER_SERVICES } from "@/lib/offer";
 
 /** "200 zł" → 200. Ceny w ofercie są tekstem (redakcyjnym), schema chce liczby. */
-function priceValue(price: string): string | null {
+export function priceValue(price: string): string | null {
   const digits = price.replace(/\s/g, "").match(/\d+/);
   return digits ? digits[0] : null;
 }
