@@ -4,7 +4,7 @@
 
 **A boutique-wellness home for a physiotherapy clinic in Libiąż.**
 
-Orthopedic and sports physiotherapy, corrective gymnastics, medical training, kinesiotaping and massage — presented the way a premium studio deserves.
+Orthopedic, sports and dental physiotherapy, massage, medical training and kinesiotaping — presented the way a premium studio deserves.
 
 [**anovastudio.pl**](https://anovastudio.pl) · Polish-language site
 
@@ -28,15 +28,16 @@ This is a real production system, not a static landing page: the site renders fr
 
 ## The offer
 
-Everything the studio does, in one place:
+Four services, each with its own price, session length, and the conditions it actually addresses — laid out as an editorial "treatment menu" rather than a price table:
 
-- **Orthopedic physiotherapy** — diagnosis-led treatment of the musculoskeletal system
-- **Sports physiotherapy** — injury recovery and return-to-training support
-- **Corrective gymnastics** — posture work for children and adults
-- **Medical training** — individually programmed, health-first strength work
-- **Kinesiotaping** and **massage**
+| Service | Price | Session | Covers |
+|---------|-------|---------|--------|
+| **Physiotherapy** | 200 zł | 55 min | Orthopedic (spine, shoulder, knee, post-operative rehab), sports (injuries, return to sport, ACL), and **dental** — TMJ pain, bruxism, tension headaches |
+| **Massage** | 180 zł | 55 min | Therapeutic deep-tissue, relaxation, lymphatic drainage, sports, and lifting massage |
+| **Training** | 180 zł | 55 min | Medical, functional and personal training, plus corrective gymnastics — always preceded by a functional assessment |
+| **Kinesiotaping** | 50 zł | 10 min | Muscle and joint pain, swelling, sports injuries, rehabilitation support |
 
-A dedicated cooperation page addresses sports clubs, companies and organized groups.
+Every service belongs to a location: the whole offer runs in **Libiąż** today, and a **Katowice** tab is already in place, marked *coming soon*. A dedicated cooperation page addresses sports clubs, companies and organized groups.
 
 ## The look
 
@@ -44,4 +45,11 @@ The design translates the studio's interior moodboard into the web: warm beige p
 
 ## Under the hood
 
-A modern, self-hosted stack — headless CMS feeding a server-rendered site behind a TLS reverse proxy, shipped through an automated build-and-deploy pipeline and running comfortably on a free-tier cloud machine. Built and operated by [NextStepProDev](https://github.com/NextStepProDev).
+A modern, self-hosted stack — a headless CMS feeding a server-rendered site behind its own TLS-terminating reverse proxy, shipped through an automated build-and-deploy pipeline and running comfortably on a single free-tier cloud machine.
+
+Two design decisions worth naming:
+
+- **A CMS outage costs a section, not the site.** The content layer falls back to empty state by design, so every page still renders — which is also why the production build succeeds with no backend running at all.
+- **Search engines see the whole page.** Content tucked behind expandable panels stays in the served HTML instead of appearing on click, and every page ships its own canonical URL, social card, and local-business structured data.
+
+Built and operated by [NextStepProDev](https://github.com/NextStepProDev).
