@@ -74,17 +74,40 @@ jobs:
             else
               echo "VERSION=${VERSION}" >> .env
             fi
+            # Sprzątanie MUSI iść PRZED pullem. Nowe obrazy (~3,4 GB) nie mieszczą
+            # się na 45-gigabajtowym dysku obok poprzednich, a pull przerwany na
+            # braku miejsca kończy deploy na czerwono — dokładnie tak padło 1.8.2,
+            # przy dysku zapchanym w 99% przez 58 nieużywanych obrazów.
+            # Nie ma tu `docker image prune -af --filter until=...`: na tej maszynie
+            # (containerd image store) filtr sprawiał, że otagowane obrazy
+            # przeżywały każde sprzątanie i uzbierały się wszystkie wersje od
+            # początku projektu. Kasujemy więc jawnie, po tagach: zostają obrazy
+            # trzymane przez kontenery i KEEP najnowszych z każdego repozytorium —
+            # tyle zapasu, żeby ręczny rollback nie wymagał pobierania z GHCR.
+            # `|| true` — sprzątanie nie ma prawa ubić deployu.
+            KEEP=2
+            IN_USE=$(docker ps -a --format '{{.Image}}' | sort -u)
+            for REPO in anovastudio-frontend anovastudio-backend; do
+              docker images "ghcr.io/nextstepprodev/${REPO}" \
+                --filter 'dangling=false' \
+                --format '{{.CreatedAt}}\t{{.Repository}}:{{.Tag}}' \
+                | sort -r | tail -n +$((KEEP + 1)) | cut -f2 \
+                | while read -r IMG; do
+                    if ! printf '%s\n' "$IN_USE" | grep -qxF "$IMG"; then
+                      echo "cleanup: usuwam $IMG"
+                      docker rmi "$IMG" || true
+                    fi
+                  done
+            done
+            # Warstwy osierocone po usuniętych tagach (ten wariant, bez filtra, działa).
+            docker image prune -f || true
+            df -h / | tail -1
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
             # nginx.conf is bind-mounted from the host, so up -d alone won't reload
             # it when the image tag is unchanged. Validate and hot-reload explicitly.
             docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
             docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
-            # Każdy deploy zostawia poprzedni obraz frontu i backendu; na dysku tej
-            # maszyny to szybko urasta. Usuwamy TYLKO obrazy bez kontenera (-a) i
-            # starsze niż tydzień, więc poprzednia wersja zostaje pod ewentualny
-            # ręczny rollback. `|| true` — sprzątanie nie ma prawa ubić deployu.
-            docker image prune -af --filter "until=168h" || true
 
       - name: Verify deployment health
         uses: appleboy/ssh-action@v1
