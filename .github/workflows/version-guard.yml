@@ -1,0 +1,82 @@
+name: Version Guard
+
+# Obrazy w GHCR są tagowane wartością z pliku VERSION (`type=raw` w ci-*.yml),
+# a deploy.yml pinuje dokładnie ten tag. Merge zmieniający kod aplikacji bez
+# podbicia VERSION NADPISUJE istniejący tag inną zawartością — po cichu, bo CI
+# jest wtedy zielone. Tag przestaje cokolwiek znaczyć i rollback nie ma dokąd
+# wrócić. Zdarzyło się to naprawdę: trzy merge'e Dependabota (w tym major bump
+# `motion` 12 → 13) wjechały pod istniejący tag 1.8.0.
+#
+# Bramka zamienia tę cichą awarię w czerwony PR, zanim cokolwiek trafi na main.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  version-bumped:
+    name: VERSION bumped alongside app changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Pełna historia — bez niej base.sha nie istnieje lokalnie i diff pada.
+          fetch-depth: 0
+
+      - name: Require a VERSION bump when app code changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          CHANGED=$(git diff --name-only "$BASE_SHA" HEAD)
+          # grep -c zwraca 1 przy zero trafień, więc || true — inaczej set -e
+          # ubija krok na PR-ze, który po prostu nie rusza aplikacji.
+          APP_FILES=$(printf '%s\n' "$CHANGED" | grep -E '^(frontend|backend)/' || true)
+          VERSION_BUMPED=$(printf '%s\n' "$CHANGED" | grep -Fx 'VERSION' || true)
+
+          if [ -z "$APP_FILES" ]; then
+            echo "Brak zmian w frontend/ ani backend/ — bump VERSION niepotrzebny."
+            exit 0
+          fi
+
+          if [ -n "$VERSION_BUMPED" ]; then
+            echo "OK: kod aplikacji zmieniony i VERSION podbity do $(cat VERSION)."
+            exit 0
+          fi
+
+          {
+            echo "Ten PR zmienia kod aplikacji, ale zostawia VERSION na $(cat VERSION)."
+            echo
+            echo "CI taguje obrazy wartością z VERSION, więc merge nadpisałby istniejące"
+            echo "obrazy $(cat VERSION) w GHCR inną zawartością. Tag, który pinuje deploy.yml,"
+            echo "przestaje cokolwiek znaczyć, a rollback nie ma dokąd wrócić."
+            echo
+            echo "Napraw: podbij VERSION w tym PR-ze (patch przy bumpach zależności i fixach,"
+            echo "minor przy nowej funkcji)."
+            echo
+            echo "Zmienione pliki aplikacji:"
+            printf '%s\n' "$APP_FILES" | sed 's/^/  /'
+          } | tee /tmp/guard-message.txt
+
+          echo "::error title=Podbij VERSION::Kod aplikacji zmieniony, VERSION zostaje na $(cat VERSION) — merge nadpisałby ten tag w GHCR."
+          exit 1
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f /tmp/guard-message.txt ]; then
+            {
+              echo "### ❌ Version Guard"
+              echo
+              echo '```'
+              cat /tmp/guard-message.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### ✅ Version Guard" >> "$GITHUB_STEP_SUMMARY"
+          fi
