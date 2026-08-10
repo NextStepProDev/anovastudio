@@ -27,9 +27,17 @@ const heroSlides: HeroSlide[] = [
   },
 ];
 
+// Teaser oferty pod hero — świadomie osobny od OFFER_SERVICES (`lib/offer.ts`).
+// Cennik grupuje po USŁUDZE (Fizjoterapia z zakresami ortopedyczna/sportowa/
+// stomatologiczna), a ten pasek mówi językiem pacjenta, który szuka swojej
+// dolegliwości, nie pozycji cennika — dlatego zakresy stoją tu jako osobne hasła.
+// ⚠️ Rozjazd już raz kosztował: fizjoterapia stomatologiczna weszła do cennika
+// i przez trzy tygodnie nie istniała na stronie głównej, mimo że trafiała do
+// JSON-LD. Dodając albo zmieniając cokolwiek w OFFER_SERVICES, przejrzyj tę listę.
 const services = [
   "Fizjoterapia ortopedyczna",
   "Fizjoterapia sportowa",
+  "Fizjoterapia stomatologiczna",
   "Gimnastyka korekcyjna",
   "Trening medyczny",
   "Kinesiotaping",
@@ -79,7 +87,9 @@ export default function Home() {
 
       <section className="border-y border-line bg-paper-warm">
         <Reveal delay={0.1}>
-          <ul className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-4 px-5 py-10 sm:grid-cols-3 md:grid-cols-6 md:divide-x md:divide-line">
+          {/* Liczba kolumn idzie za długością listy: przy siedmiu hasłach siatka
+              sześciokolumnowa zostawiała ostatnie samo w drugim rzędzie. */}
+          <ul className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-4 px-5 py-10 sm:grid-cols-4 md:grid-cols-7 md:divide-x md:divide-line">
             {services.map((service) => (
               <li
                 key={service}
