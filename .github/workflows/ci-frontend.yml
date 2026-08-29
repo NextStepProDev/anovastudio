@@ -40,11 +40,15 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      # Informacyjnie na razie (nie blokuje deployu). Gdy wyniki będą czyste,
-      # usuń continue-on-error, żeby high/critical wywalały build.
-      - name: npm audit (high+)
-        run: npm audit --audit-level=high
-        continue-on-error: true
+      # BLOKUJE. `--omit=dev` jest tu istotą rzeczy, a nie zawężeniem: obraz
+      # produkcyjny to `output: standalone`, więc trafiają do niego wyłącznie
+      # zależności produkcyjne. Bez tej flagi audyt zgłaszał podatności w samym
+      # eslincie i jego drzewie (js-yaml, brace-expansion) — rzeczy, które nigdy
+      # nie opuszczają maszyny CI — więc bramka stała na `continue-on-error`
+      # i nie pilnowała niczego. Zawężona do tego, co faktycznie leci na serwer,
+      # świeci na zero i może wreszcie wywalać build.
+      - name: npm audit (produkcyjne, high+)
+        run: npm audit --omit=dev --audit-level=high
       - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm run build

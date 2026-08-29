@@ -171,6 +171,7 @@ function BrandMark({
 }) {
   // zwykły <img>, nie next/image: to SVG, optymalizator nic tu nie wnosi
   const mark = (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/logo/logo-compact.svg"
       alt={alt}
@@ -275,11 +276,25 @@ function BrandSlide({
   return (
     <div className="plaster absolute inset-0">
       {/* MOBILE (tekst przyklejony do dołu): znak dostaje pas nad nagłówkiem, a jego
-          wysokość to wysokość hero minus miejsce bloku tekstu. Blok jest w praktyce
-          stały (~380–410 px), więc odejmujemy 430 px zapasu i ograniczamy znak przez
-          `max-h-full`: na iPhonie SE zostaje tu tylko ~176 px, więc logo samo maleje
-          zamiast wejść w napisy; na wyższych ekranach rośnie. `pt-6` pilnuje, żeby na
-          najniższych ekranach znak nie kleił się do belki menu.
+          wysokość to wysokość hero minus 430 px zarezerwowane na blok tekstu.
+          `pt-6` pilnuje, żeby na najniższych ekranach znak nie kleił się do belki menu.
+
+          ⚠️ ZMIERZONE NA ŻYWEJ STRONIE (iPhone SE, 375×667): przy widocznym pasku
+          przeglądarki hero ma tylko ~426 px, więc 426 − 430 wychodzi poniżej zera,
+          pas dostaje wysokość 0 i znak w ogóle się nie pokazuje — plansza otwierająca
+          rotację jest wtedy pustą kremową ścianą przez całą swoją ekspozycję.
+          Wbrew temu, co mówił poprzedni komentarz („zostaje ~176 px").
+
+          Świadomie NIE dokładamy tu podłogi typu `max(84px, …)`. Na takim ekranie blok
+          tekstu startuje 64 px od góry hero, więc każdy pas wyższy niż 64 px wchodzi
+          znakiem na nagłówek „Odzyskaj swobodę" — a logo NA napisach jest gorsze niż
+          logo, którego nie ma. Zwijanie do zera jest w tej sytuacji zachowaniem
+          poprawnym; problemem jest to, że plansza brandowa nie ma wtedy nic do
+          pokazania. Dwa realne wyjścia, oba to decyzja projektowa, nie poprawka:
+          pomijać planszę brandową na niskich ekranach (rotacja startuje od zdjęcia)
+          albo zejść z rezerwacji 430 px do faktycznej wysokości bloku tekstu
+          (zmierzone ~362 px) — to drugie wymaga testu na prawdziwych telefonach,
+          bo za mała rezerwa zamienia brak znaku na znak wchodzący na napisy.
 
           Znak dostaje teraz pełne pudełko (`h-full w-[68%]`) i skaluje się w nim przez
           `object-contain`, zamiast być wymiarowany samymi ograniczeniami na <img>.

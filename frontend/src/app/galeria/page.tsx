@@ -52,7 +52,17 @@ export default async function GaleriaPage() {
                 >
                   <Image
                     src={strapiMediaUrl(format.url)}
-                    alt={photo.alternativeText ?? ""}
+                    // Opis z Media Library, a gdy go brak — opis zastępczy z numerem.
+                    // `alt=""` znaczy „obrazek czysto dekoracyjny, pomiń": czytnik
+                    // ekranu przechodził nad CAŁĄ galerią bez słowa, a dla wyszukiwarki
+                    // 27 zdjęć gabinetu nie niosło żadnej treści. Numer w opisie jest
+                    // celowy — 27 identycznych zdań brzmi w czytniku jak zacięta płyta.
+                    // Docelowo pole `alternativeText` uzupełnia się w panelu Strapi
+                    // i wtedy ten zapas nie jest używany.
+                    alt={
+                      photo.alternativeText?.trim() ||
+                      `Wnętrze gabinetu ${BRAND} w Libiążu — zdjęcie ${index + 1} z ${photos.length}`
+                    }
                     width={format.width}
                     height={format.height}
                     sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"

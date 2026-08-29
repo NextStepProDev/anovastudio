@@ -28,38 +28,52 @@ export default async function ZespolPage() {
         Ludzie, którym możesz zaufać
       </h1>
 
-      <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-        {staff.map((member, index) => (
-          <Reveal key={member.documentId} delay={index * 0.1} className="group">
-            <article>
-              <div className="photo-frame relative aspect-[3/4] bg-paper-warm ring-1 ring-line shadow-[0_24px_60px_-24px_color-mix(in_srgb,var(--color-accent)_45%,transparent)]">
-                {member.photo && (
-                  <Image
-                    src={strapiMediaUrl(
-                      member.photo.formats?.medium?.url ?? member.photo.url,
-                    )}
-                    alt={member.photo.alternativeText ?? member.fullName}
-                    fill
-                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                  />
-                )}
-              </div>
-              <h2 className="mt-5 font-display text-xl font-semibold text-ink">
-                {member.fullName}
-              </h2>
-              <p className="mt-1 font-display text-sm font-medium uppercase tracking-wide text-accent">
-                {member.position}
-              </p>
-              <StaffDetails
-                bio={member.bio}
-                courses={member.courses}
-                className="mt-3"
-              />
-            </article>
-          </Reveal>
-        ))}
-      </div>
+      {/* Stan pusty — ten sam kontrakt, co na Galerii (`galeria/page.tsx`). Bez niego
+          pusta odpowiedź ze Strapi (nieopublikowany wpis albo padnięty CMS, na co
+          `lib/strapi.ts` jest świadomie przygotowane) zostawiała tu sam nagłówek nad
+          pustką — strona wyglądała na zepsutą zamiast na stronę bez treści. */}
+      {staff.length === 0 ? (
+        <p className="mt-14 max-w-md text-lg leading-8 text-ink-soft">
+          Prezentacja zespołu jest w przygotowaniu — zajrzyj tu wkrótce.
+        </p>
+      ) : (
+        <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+          {staff.map((member, index) => (
+            <Reveal
+              key={member.documentId}
+              delay={index * 0.1}
+              className="group"
+            >
+              <article>
+                <div className="photo-frame relative aspect-[3/4] bg-paper-warm ring-1 ring-line shadow-[0_24px_60px_-24px_color-mix(in_srgb,var(--color-accent)_45%,transparent)]">
+                  {member.photo && (
+                    <Image
+                      src={strapiMediaUrl(
+                        member.photo.formats?.medium?.url ?? member.photo.url,
+                      )}
+                      alt={member.photo.alternativeText ?? member.fullName}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                    />
+                  )}
+                </div>
+                <h2 className="mt-5 font-display text-xl font-semibold text-ink">
+                  {member.fullName}
+                </h2>
+                <p className="mt-1 font-display text-sm font-medium uppercase tracking-wide text-accent">
+                  {member.position}
+                </p>
+                <StaffDetails
+                  bio={member.bio}
+                  courses={member.courses}
+                  className="mt-3"
+                />
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -40,10 +40,18 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      # Informacyjnie na razie (nie blokuje deployu). Gdy wyniki będą czyste,
-      # usuń continue-on-error, żeby high/critical wywalały build.
-      - name: npm audit (high+)
-        run: npm audit --audit-level=high
+      # Informacyjnie — i tu, w odróżnieniu od frontendu, musi takie zostać.
+      # Zawężone do zależności produkcyjnych zostają DWA zgłoszenia „high":
+      # `js-yaml` (poprawka tylko w 5.x, bez backportu do 4.x) i `vite`
+      # (poprawka od 6.4.3 w górę). Oba siedzą w drzewie samego Strapiego —
+      # wymuszenie majora przez `overrides` łamie budowanie panelu admina,
+      # więc znikną dopiero z podbiciem @strapi/strapi. Reszta, którą DAŁO się
+      # domknąć bez majora, jest już domknięta w `overrides` w package.json.
+      # ⚠️ Te overrides trzeba rewidować: przypinały `^3.1.4` i `^5.0.8`, czyli
+      # wersje, które same zdążyły stać się podatne, i audyt cicho świecił na
+      # czerwono mimo „załatanego" pliku.
+      - name: npm audit (produkcyjne, high+)
+        run: npm audit --omit=dev --audit-level=high
         continue-on-error: true
       - run: npm run build
 

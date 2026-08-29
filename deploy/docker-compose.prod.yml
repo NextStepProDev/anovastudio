@@ -1,7 +1,10 @@
 services:
   # Budżet pamięci: serwer to Oracle E2.1.Micro z 1 GB RAM. Suma limitów
-  # (192+384+224+32 = 832 MB) zostawia ~190 MB na system i dockera; resztę
-  # dociąża 2 GB swap z setup-swap.sh (bez niego stack nie wstanie).
+  # (postgres 192 + strapi 384 + frontend 224 + nginx 64 = 864 MB) zostawia
+  # ~160 MB na system i dockera; resztę dociąża 2 GB swap z setup-swap.sh
+  # (bez niego stack nie wstanie). Suma była tu policzona ze starym limitem
+  # nginx (32 MB) i po jego podbiciu do 64 nikt jej nie poprawił — a to jedna
+  # z niewielu liczb, według których podejmuje się tu decyzje.
   postgres:
     image: postgres:16-alpine
     container_name: anovastudio-postgres-prod

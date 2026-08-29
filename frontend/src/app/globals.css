@@ -15,13 +15,23 @@
      światło buduje głębię, nie ciemne sekcje. Akcent (bursztyn) pozostaje. */
   --color-ink: #2b241c;
   --color-ink-soft: #5c5246;
-  --color-ink-muted: #94897a;
+  /* Tier „meta": etykiety pól, czas trwania zabiegu, podpis w stopce. Nosi WYŁĄCZNIE
+     drobny tekst, więc musi spełniać próg WCAG AA (4.5:1) — poprzednie #94897a dawało
+     3,0:1 na kremie i 2,6:1 na ciepłym beżu, czyli stopka z copyrightem i etykiety na
+     Kontakcie były poniżej progu czytelności. Ta wartość trzyma 5,4:1 na `paper`
+     i 4,6:1 na `paper-warm` (mierzone skryptem, nie na oko). */
+  --color-ink-muted: #6b6154;
   /* Trzy powierzchnie (od najjaśniejszej): krem → ciepły beż → głębszy greige. */
   --color-paper: #f5f0e8;
   --color-paper-warm: #e8dfd2;
   --color-sand: #dccbb6;
   --color-line: #d7c9bb;
-  --color-accent: #9c6b33;
+  /* Bursztyn marki. Odcień przyciemniony z #9c6b33, bo tamten dawał 4,05:1 na kremie
+     i 3,5:1 na ciepłym beżu — poniżej progu AA, a niesie DROBNY tekst: kickery, cenę
+     w cenniku, stanowisko w Zespole, „Czytaj więcej", numerację na Współpracy. Teraz
+     5,3:1 na `paper` i 4,6:1 na `paper-warm`. Do dekoracji (kropki list, poświaty,
+     obramowania) odcień jest bez znaczenia — próg dotyczy tekstu. */
+  --color-accent: #86592c;
   --color-accent-dark: #7f5527;
   --color-glow: #e9c795;
 
