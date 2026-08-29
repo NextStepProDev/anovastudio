@@ -104,6 +104,12 @@ export default function WspolpracaPage() {
                 aria-label={`${partner.name} — otwórz stronę partnera w nowej karcie`}
                 className="group flex h-32 items-center justify-center border border-line bg-paper-warm p-6 transition-all duration-300 hover:border-accent hover:shadow-[0_16px_48px_-16px_color-mix(in_srgb,var(--color-accent)_35%,transparent)] md:h-36"
               >
+                {/* Świadomie zwykły <img>, nie next/image: logotypy to małe pliki
+                    o stałym rozmiarze, wspólnie ostylowane (wyszarzenie +
+                    mix-blend-multiply); optymalizator nic tu nie wnosi, a na
+                    serwerze z jednym rdzeniem kosztuje. Regułę wyciszamy punktowo,
+                    żeby lint świecił na zero i przypadkowy <img> był widoczny. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={partner.logo}
                   alt={partner.name}

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 export type HeroSlide =
   /** Kadr fotograficzny — osobny plik na mobile i desktop (art direction). */
@@ -63,6 +63,50 @@ const MARK_MASK = {
   maskRepeat: "no-repeat",
   WebkitMaskRepeat: "no-repeat",
 } as const;
+
+/**
+ * Kiedy plansza brandowa NIE ma sensu i rotacja ma ją pominąć.
+ *
+ * W układzie mobilnym znak dostaje pas nad blokiem tekstu, a pas to:
+ *   (100svh − 82 px belki menu) − 430 px zarezerwowane na tekst
+ * Przy 96 px pasa znak ma już tylko ~60 px szerokości i przestaje cokolwiek
+ * komunikować; poniżej zera znika zupełnie, a plansza jest wtedy pustą kremową
+ * ścianą przez całą swoją ekspozycję (zmierzone na żywej stronie: hero 426 px).
+ * 82 + 430 + 96 = 608 px — poniżej tej wysokości okna otwieramy rotację od razu
+ * pierwszym zdjęciem.
+ *
+ * Warunek celowo obejmuje TAKŻE szerokość: powyżej `md` znak idzie do osobnej
+ * kolumny obok tekstu, gdzie nic go nie ściska, więc niskie okno na desktopie
+ * nie jest powodem do pomijania planszy.
+ *
+ * ⚠️ To nie jest wyłącznie sprawa „małych telefonów". Najczęstszy przypadek to
+ * DOWOLNY telefon obrócony poziomo — wtedy wysokość okna spada do 320–430 px
+ * i próg jest przekroczony na każdym modelu.
+ */
+const BRAND_SLIDE_HAS_NO_ROOM =
+  "(max-width: 767.98px) and (max-height: 607.98px)";
+
+/**
+ * Media query jako źródło stanu Reacta. `useSyncExternalStore` zamiast
+ * `useEffect` + `useState`, bo sam pilnuje subskrypcji i daje jawny snapshot
+ * serwerowy — bez niego trzeba by renderować dwa razy i łapać ostrzeżenie
+ * o niezgodności hydracji.
+ *
+ * Snapshot serwerowy to `false` („miejsce jest"): serwer nie zna wymiarów okna,
+ * a przy takim założeniu HTML z serwera zawiera komplet slajdów i na wysokim
+ * ekranie — czyli w większości wejść — po hydracji nic się nie zmienia.
+ */
+function useMediaQuery(query: string) {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mql = window.matchMedia(query);
+      mql.addEventListener("change", onChange);
+      return () => mql.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
+}
 
 /** Ile ten slajd ma być na ekranie, w ms. */
 function holdOf(slide: HeroSlide, interval: number) {
@@ -171,6 +215,7 @@ function BrandMark({
 }) {
   // zwykły <img>, nie next/image: to SVG, optymalizator nic tu nie wnosi
   const mark = (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/logo/logo-compact.svg"
       alt={alt}
@@ -275,11 +320,23 @@ function BrandSlide({
   return (
     <div className="plaster absolute inset-0">
       {/* MOBILE (tekst przyklejony do dołu): znak dostaje pas nad nagłówkiem, a jego
-          wysokość to wysokość hero minus miejsce bloku tekstu. Blok jest w praktyce
-          stały (~380–410 px), więc odejmujemy 430 px zapasu i ograniczamy znak przez
-          `max-h-full`: na iPhonie SE zostaje tu tylko ~176 px, więc logo samo maleje
-          zamiast wejść w napisy; na wyższych ekranach rośnie. `pt-6` pilnuje, żeby na
-          najniższych ekranach znak nie kleił się do belki menu.
+          wysokość to wysokość hero minus 430 px zarezerwowane na blok tekstu.
+          `pt-6` pilnuje, żeby na najniższych ekranach znak nie kleił się do belki menu.
+
+          ⚠️ ZMIERZONE NA ŻYWEJ STRONIE (375×667): przy widocznym pasku przeglądarki
+          hero ma tylko ~426 px, więc 426 − 430 wychodzi poniżej zera i pas dostaje
+          wysokość 0. Wbrew temu, co mówił poprzedni komentarz („zostaje ~176 px").
+
+          Świadomie NIE dokładamy tu podłogi typu `max(84px, …)`. Na takim ekranie blok
+          tekstu startuje 64 px od góry hero, więc każdy pas wyższy niż to wchodzi
+          znakiem na nagłówek „Odzyskaj swobodę" — a logo NA napisach jest gorsze niż
+          logo, którego nie ma. Zwijanie do zera jest tu zachowaniem POPRAWNYM.
+
+          Problemem było co innego: pusty pas zostawiał planszę brandową bez niczego
+          do pokazania. Rozwiązuje to `BRAND_SLIDE_HAS_NO_ROOM` — poniżej progu
+          wysokości plansza w ogóle nie wchodzi do rotacji, więc ten pas nigdy nie
+          renderuje się pusty. Ta reguła obsługuje zakres, w którym pas JEST, ale
+          bywa ciasny; próg i to wyliczenie muszą zostać zgodne.
 
           Znak dostaje teraz pełne pudełko (`h-full w-[68%]`) i skaluje się w nim przez
           `object-contain`, zamiast być wymiarowany samymi ograniczeniami na <img>.
@@ -361,6 +418,16 @@ export default function HeroCarousel({
 }) {
   const reduceMotion = useReducedMotion();
 
+  // Na niskim ekranie w układzie mobilnym plansza brandowa nie ma gdzie pokazać
+  // znaku (patrz BRAND_SLIDE_HAS_NO_ROOM) — wypada z rotacji, a nie wisi jako
+  // pusta ściana. Odfiltrowana lista jest zapamiętana, bo wchodzi w zależności
+  // efektu odliczającego: nowa tablica przy każdym renderze zerowałaby licznik.
+  const brandHasNoRoom = useMediaQuery(BRAND_SLIDE_HAS_NO_ROOM);
+  const visibleSlides = useMemo(
+    () => (brandHasNoRoom ? slides.filter((s) => s.kind !== "brand") : slides),
+    [slides, brandHasNoRoom],
+  );
+
   /**
    * Aktywny kadr i „dokąd domontowaliśmy" w jednym stanie — bo to jedna decyzja,
    * podejmowana w jednym miejscu (przy przewinięciu slajdu).
@@ -377,24 +444,27 @@ export default function HeroCarousel({
     mountedThrough: 1,
   });
 
+  // Obrót telefonu do poziomu skraca listę w trakcie rotacji, więc zapamiętany
+  // indeks może wskazywać poza jej koniec. Bez tego `visibleSlides[index]` bywa
+  // `undefined` i `holdOf` wywala się na odczycie `.kind`.
+  const safeIndex = index < visibleSlides.length ? index : 0;
+
   // setTimeout, nie setInterval: czas ekspozycji zależy od slajdu (tytułówka wisi
   // krócej), więc odliczanie trzeba uzbrajać od nowa po każdej zmianie kadru.
   useEffect(() => {
-    if (reduceMotion || slides.length < 2) return;
+    if (reduceMotion || visibleSlides.length < 2) return;
     const id = setTimeout(() => {
-      setRotation((current) => {
-        const next = (current.index + 1) % slides.length;
-        return {
-          index: next,
-          mountedThrough: Math.max(current.mountedThrough, next + 1),
-        };
-      });
-    }, holdOf(slides[index], interval));
+      const next = (safeIndex + 1) % visibleSlides.length;
+      setRotation((current) => ({
+        index: next,
+        mountedThrough: Math.max(current.mountedThrough, next + 1),
+      }));
+    }, holdOf(visibleSlides[safeIndex], interval));
     return () => clearTimeout(id);
-  }, [index, reduceMotion, slides, interval]);
+  }, [safeIndex, reduceMotion, visibleSlides, interval]);
 
-  if (reduceMotion || slides.length < 2) {
-    const only = slides[0];
+  if (reduceMotion || visibleSlides.length < 2) {
+    const only = visibleSlides[0];
     return (
       <>
         <Slide slide={only} eager active={false} still duration={0} />
@@ -405,13 +475,13 @@ export default function HeroCarousel({
 
   // LCP-em jest pierwszy KADR, a nie plansza brandowa (ta jest czystym SVG), więc
   // zachłannie ładujemy pierwsze prawdziwe zdjęcie w kolejce.
-  const firstPhoto = slides.findIndex((slide) => slide.kind !== "brand");
+  const firstPhoto = visibleSlides.findIndex((slide) => slide.kind !== "brand");
 
   return (
     <>
-      {slides.map((slide, i) => {
+      {visibleSlides.map((slide, i) => {
         if (i > mountedThrough) return null;
-        const active = i === index;
+        const active = i === safeIndex;
         // Ken Burns (na całym kadrze) tylko dla zdjęć — na planszy brandowej wypychał
         // logo pod belkę menu, więc ona rusza się inaczej: powiększa się sam znak,
         // wokół własnego środka. Patrz BRAND_MARK_SCALE.

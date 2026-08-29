@@ -128,8 +128,8 @@ function ServiceRow({ service }: { service: OfferService }) {
 /**
  * „Menu zabiegów" — redakcyjna, rozwijalna lista usług (bez kart, zdjęć i ikon).
  * Zakładki wybierają lokalizację; usługa trafia do zakładki, gdy jej `location`
- * = ta zakładka lub „oba". Numeracja 01–0N liczona per aktywna zakładka. Treść
- * pochodzi z `lib/offer.ts` (na sztywno). Wszystkie pozycje domyślnie zwinięte.
+ * = ta zakładka lub „oba". Treść pochodzi z `lib/offer.ts` (na sztywno).
+ * Wszystkie pozycje domyślnie zwinięte.
  */
 export default function OfferMenu() {
   const [active, setActive] = useState<TabId>("libiaz");
