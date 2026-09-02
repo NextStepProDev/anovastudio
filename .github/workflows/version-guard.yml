@@ -37,23 +37,34 @@ jobs:
           # grep -c zwraca 1 przy zero trafień, więc || true — inaczej set -e
           # ubija krok na PR-ze, który po prostu nie rusza aplikacji.
           APP_FILES=$(printf '%s\n' "$CHANGED" | grep -E '^(frontend|backend)/' || true)
-          VERSION_BUMPED=$(printf '%s\n' "$CHANGED" | grep -Fx 'VERSION' || true)
 
           if [ -z "$APP_FILES" ]; then
             echo "Brak zmian w frontend/ ani backend/ — bump VERSION niepotrzebny."
             exit 0
           fi
 
-          if [ -n "$VERSION_BUMPED" ]; then
-            echo "OK: kod aplikacji zmieniony i VERSION podbity do $(cat VERSION)."
+          # Porównanie z AKTUALNYM main, nie z base.sha sprzed otwarcia PR-a.
+          # "VERSION jest w diffie" nie wystarcza: dwa PR-y otwarte równolegle
+          # podbijają do tego samego numeru, a po merge'u pierwszego drugi ma
+          # ten numer zajęty — mimo że w jego diffie plik nadal figuruje.
+          # Git nie zgłosi tam konfliktu (obie strony wpisały tę samą wartość),
+          # więc jedyne, co to łapie, to wymóg bycia ostro przed main.
+          git fetch origin main --quiet
+          MAIN_VERSION=$(git show origin/main:VERSION | tr -d '[:space:]')
+          PR_VERSION=$(tr -d '[:space:]' < VERSION)
+
+          HIGHEST=$(printf '%s\n%s\n' "$MAIN_VERSION" "$PR_VERSION" | sort -V | tail -1)
+          if [ "$HIGHEST" = "$PR_VERSION" ] && [ "$MAIN_VERSION" != "$PR_VERSION" ]; then
+            echo "OK: kod aplikacji zmieniony, VERSION $PR_VERSION wyprzedza main ($MAIN_VERSION)."
             exit 0
           fi
 
           {
-            echo "Ten PR zmienia kod aplikacji, ale zostawia VERSION na $(cat VERSION)."
+            echo "Ten PR zmienia kod aplikacji, ale jego VERSION ($PR_VERSION) nie wyprzedza"
+            echo "wersji na main ($MAIN_VERSION)."
             echo
             echo "CI taguje obrazy wartością z VERSION, więc merge nadpisałby istniejące"
-            echo "obrazy $(cat VERSION) w GHCR inną zawartością. Tag, który pinuje deploy.yml,"
+            echo "obrazy $MAIN_VERSION w GHCR inną zawartością. Tag, który pinuje deploy.yml,"
             echo "przestaje cokolwiek znaczyć, a rollback nie ma dokąd wrócić."
             echo
             echo "Napraw: podbij VERSION w tym PR-ze (patch przy bumpach zależności i fixach,"
@@ -63,7 +74,7 @@ jobs:
             printf '%s\n' "$APP_FILES" | sed 's/^/  /'
           } | tee /tmp/guard-message.txt
 
-          echo "::error title=Podbij VERSION::Kod aplikacji zmieniony, VERSION zostaje na $(cat VERSION) — merge nadpisałby ten tag w GHCR."
+          echo "::error title=Podbij VERSION::VERSION $PR_VERSION nie wyprzedza main ($MAIN_VERSION) — merge nadpisałby ten tag w GHCR."
           exit 1
 
       - name: Summary

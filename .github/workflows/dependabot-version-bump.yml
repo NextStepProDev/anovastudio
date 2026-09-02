@@ -1,16 +1,25 @@
 name: Dependabot VERSION bump
 
-# Version Guard wymaga, żeby PR ruszający kod aplikacji podbijał też VERSION —
+# Version Guard wymaga, żeby PR ruszający kod aplikacji podbijał VERSION —
 # inaczej merge nadpisałby istniejący tag obrazu w GHCR inną zawartością.
 # Dependabot o tym pliku nie wie i wiedzieć nie będzie: umie podmienić wersje
 # w package.json i package-lock.json, i tyle. Bez tego workflow KAŻDY jego PR
-# dotykający frontend/ lub backend/ wymaga ręcznego commita — co miesiąc, na
-# każdym PR-ze osobno. Ten job robi ten jeden commit za człowieka.
+# dotykający frontend/ lub backend/ wymaga ręcznego commita.
 #
-# pull_request_target, a nie pull_request, bo przy PR-ach Dependabota zwykły
-# GITHUB_TOKEN jest tylko do odczytu i nie da się nic wypchnąć. Gałęzie
-# Dependabota leżą w tym samym repo (to nie forki), a job nie uruchamia
-# NICZEGO z kodu PR-a — czyta VERSION, liczy następny numer, commituje.
+# Dwa triggery, bo jeden nie wystarcza:
+#
+#  * pull_request_target — podbija numer, gdy PR powstaje lub się odświeża.
+#    (Nie pull_request: przy PR-ach Dependabota GITHUB_TOKEN jest read-only
+#    i nie da się nic wypchnąć. Gałęzie Dependabota leżą w tym samym repo,
+#    a job nie uruchamia NICZEGO z kodu PR-a — czyta VERSION i commituje.)
+#
+#  * push na main — bo dwa PR-y otwarte równolegle policzą ten SAM następny
+#    numer. Po zmergowaniu pierwszego drugi ma numer zajęty, ale git nie widzi
+#    konfliktu (obie strony wpisały identyczną wartość), więc Dependabot się
+#    nie odświeża, kontrolki się nie przeliczają i PR zostaje z nieaktualnym
+#    zielonym. Merge takiego PR-a nadpisuje obraz poprzedniego — dokładnie ta
+#    awaria, przed którą stoi Version Guard. Ten trigger przelicza numery
+#    wszystkim otwartym PR-om Dependabota po każdym merge'u.
 
 on:
   pull_request_target:
@@ -18,20 +27,22 @@ on:
     paths:
       - "frontend/**"
       - "backend/**"
+  push:
+    branches: [main]
 
 permissions:
   contents: write
+  pull-requests: read
 
-# Dwa zdarzenia pod rząd na tym samym PR-ze (np. rebase Dependabota) nie mogą
-# wypychać dwóch commitów naraz — drugi push i tak odbiłby się od pierwszego.
 concurrency:
-  group: dependabot-bump-${{ github.event.pull_request.number }}
+  # Wszystkie podbicia szeregowo: równoległe przebiegi liczyłyby ten sam numer.
+  group: dependabot-version-bump
   cancel-in-progress: false
 
 jobs:
-  bump:
-    name: Bump VERSION on Dependabot PRs
-    if: github.actor == 'dependabot[bot]'
+  bump-this-pr:
+    name: Bump VERSION on a Dependabot PR
+    if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -39,41 +50,36 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
+      - run: .github/scripts/bump-pr-version.sh '${{ github.event.pull_request.head.ref }}'
 
-      - name: Bump the patch version if the PR has not done it already
+  rebump-open-prs:
+    name: Re-bump open Dependabot PRs after a merge
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
-          git fetch origin main --depth=1
+          BRANCHES=$(gh pr list --state open --author 'app/dependabot' \
+            --json headRefName,files \
+            --jq '.[] | select(any(.files[].path; startswith("frontend/") or startswith("backend/"))) | .headRefName')
 
-          BASE=$(git show origin/main:VERSION | tr -d '[:space:]')
-          HEAD_VERSION=$(tr -d '[:space:]' < VERSION)
-
-          # Job odpala się też po własnym pushu (zdarzenie synchronize). Jeśli
-          # numer już się różni od main, robota jest zrobiona — wychodzimy,
-          # zamiast podbijać w kółko przy każdym przebiegu.
-          if [ "$BASE" != "$HEAD_VERSION" ]; then
-            echo "VERSION już podbity: main ma $BASE, gałąź ma $HEAD_VERSION. Nic do roboty."
+          if [ -z "$BRANCHES" ]; then
+            echo "Brak otwartych PR-ów Dependabota dotykających kodu aplikacji."
             exit 0
           fi
 
-          if ! printf '%s' "$BASE" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error title=Zły format VERSION::'$BASE' to nie jest X.Y.Z — podbij ręcznie."
-            exit 1
-          fi
+          # Jeden zepsuty PR nie może zablokować podbicia pozostałych.
+          FAILED=0
+          while IFS= read -r branch; do
+            [ -n "$branch" ] || continue
+            .github/scripts/bump-pr-version.sh "$branch" || { echo "::warning::Nie udało się podbić $branch"; FAILED=1; }
+          done <<< "$BRANCHES"
 
-          MAJOR=${BASE%%.*}
-          REST=${BASE#*.}
-          MINOR=${REST%%.*}
-          PATCH=${REST#*.}
-          NEXT="${MAJOR}.${MINOR}.$((PATCH + 1))"
-
-          echo "$NEXT" > VERSION
-
-          git config user.name  'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add VERSION
-          git commit -m "chore: release ${NEXT}"
-          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
-
-          echo "### ⬆️ VERSION $BASE → $NEXT" >> "$GITHUB_STEP_SUMMARY"
+          exit $FAILED
