@@ -55,7 +55,11 @@ jobs:
           token: ${{ secrets.DEPENDABOT_BUMP_TOKEN || secrets.GITHUB_TOKEN }}
       - name: Stage the bump script outside the work tree
         run: cp .github/scripts/bump-pr-version.sh "$RUNNER_TEMP/bump.sh"
-      - run: "$RUNNER_TEMP/bump.sh" '${{ github.event.pull_request.head.ref }}'
+      # Blok (|), nie jedna linia: wartość zaczynająca się od cudzysłowu jest
+      # dla YAML-a domkniętym napisem, a wszystko po nim błędem składni —
+      # i wtedy CAŁY workflow przestaje się parsować.
+      - run: |
+          "$RUNNER_TEMP/bump.sh" '${{ github.event.pull_request.head.ref }}'
 
   rebump-open-prs:
     name: Re-bump open Dependabot PRs after a merge
