@@ -23,14 +23,14 @@
     "ip-address": "^10.4.0"
   },
   "dependencies": {
-    "@strapi/plugin-cloud": "5.51.2",
-    "@strapi/plugin-users-permissions": "5.51.2",
-    "@strapi/strapi": "5.51.2",
-    "pg": "8.22.0",
+    "@strapi/plugin-cloud": "5.52.2",
+    "@strapi/plugin-users-permissions": "5.52.2",
+    "@strapi/strapi": "5.52.2",
+    "pg": "8.23.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "react-router-dom": "^6.0.0",
-    "styled-components": "^6.5.0"
+    "react-router-dom": "^6.30.6",
+    "styled-components": "^6.5.3"
   },
   "devDependencies": {
     "@types/node": "^26",
