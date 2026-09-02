@@ -46,11 +46,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # Świadomie main, nie gałąź PR-a: skrypt powstał później niż otwarte
+      # gałęzie Dependabota, więc na nich go po prostu nie ma. Przełączenie na
+      # gałąź robi sam skrypt, już po skopiowaniu się poza drzewo robocze.
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
-      - run: .github/scripts/bump-pr-version.sh '${{ github.event.pull_request.head.ref }}'
+          token: ${{ secrets.DEPENDABOT_BUMP_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Stage the bump script outside the work tree
+        run: cp .github/scripts/bump-pr-version.sh "$RUNNER_TEMP/bump.sh"
+      - run: "$RUNNER_TEMP/bump.sh" '${{ github.event.pull_request.head.ref }}'
 
   rebump-open-prs:
     name: Re-bump open Dependabot PRs after a merge
@@ -61,6 +66,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          token: ${{ secrets.DEPENDABOT_BUMP_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Stage the bump script outside the work tree
+        # Skrypt przełącza drzewo robocze na gałąź PR-a, a tam tego pliku nie
+        # ma — przy drugim obiegu pętli ścieżka względna przestawała istnieć
+        # ("No such file or directory") i podbicie leciało tylko dla pierwszego
+        # PR-a. Kopia poza repozytorium jest odporna na przełączanie gałęzi.
+        run: cp .github/scripts/bump-pr-version.sh "$RUNNER_TEMP/bump.sh"
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -79,7 +91,7 @@ jobs:
           FAILED=0
           while IFS= read -r branch; do
             [ -n "$branch" ] || continue
-            .github/scripts/bump-pr-version.sh "$branch" || { echo "::warning::Nie udało się podbić $branch"; FAILED=1; }
+            "$RUNNER_TEMP/bump.sh" "$branch" || { echo "::warning::Nie udało się podbić $branch"; FAILED=1; }
           done <<< "$BRANCHES"
 
           exit $FAILED
