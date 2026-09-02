@@ -6,6 +6,15 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+    ignore:
+      # ESLint musi zostać na 9.x. `eslint-config-next` deklaruje peer
+      # `eslint >=9`, więc npm wpuszcza 10 bez ostrzeżenia, ale dociągnięty
+      # razem z nim `eslint-plugin-react` woła `context.getFilename()` —
+      # API usunięte w ESLint 10. Lint pada wtedy od razu:
+      # "Error while loading rule 'react/display-name'".
+      # Odblokować dopiero, gdy Next zacznie bundlować wtyczkę zgodną z 10.
+      - dependency-name: eslint
+        update-types: ["version-update:semver-major"]
     groups:
       # Grupuj drobne/patch bumpy w jeden PR, żeby nie zasypać przeglądu.
       minor-and-patch:
@@ -31,6 +40,12 @@ updates:
       - dependency-name: react
         update-types: ["version-update:semver-major"]
       - dependency-name: react-dom
+        update-types: ["version-update:semver-major"]
+      # react-router-dom siedzi w package.json tylko dlatego, że Strapi
+      # scaffolduje go pod panel admina — nic w src/ go nie importuje.
+      # @strapi/admin trzyma go w peer jako `^6.30.3`, więc bump do 7 wywala
+      # `npm ci` na ERESOLVE. Ta wersja idzie razem z majorem Strapi.
+      - dependency-name: react-router-dom
         update-types: ["version-update:semver-major"]
     groups:
       minor-and-patch:
