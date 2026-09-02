@@ -1,0 +1,79 @@
+name: Dependabot VERSION bump
+
+# Version Guard wymaga, żeby PR ruszający kod aplikacji podbijał też VERSION —
+# inaczej merge nadpisałby istniejący tag obrazu w GHCR inną zawartością.
+# Dependabot o tym pliku nie wie i wiedzieć nie będzie: umie podmienić wersje
+# w package.json i package-lock.json, i tyle. Bez tego workflow KAŻDY jego PR
+# dotykający frontend/ lub backend/ wymaga ręcznego commita — co miesiąc, na
+# każdym PR-ze osobno. Ten job robi ten jeden commit za człowieka.
+#
+# pull_request_target, a nie pull_request, bo przy PR-ach Dependabota zwykły
+# GITHUB_TOKEN jest tylko do odczytu i nie da się nic wypchnąć. Gałęzie
+# Dependabota leżą w tym samym repo (to nie forki), a job nie uruchamia
+# NICZEGO z kodu PR-a — czyta VERSION, liczy następny numer, commituje.
+
+on:
+  pull_request_target:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - "backend/**"
+
+permissions:
+  contents: write
+
+# Dwa zdarzenia pod rząd na tym samym PR-ze (np. rebase Dependabota) nie mogą
+# wypychać dwóch commitów naraz — drugi push i tak odbiłby się od pierwszego.
+concurrency:
+  group: dependabot-bump-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Bump VERSION on Dependabot PRs
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Bump the patch version if the PR has not done it already
+        run: |
+          set -euo pipefail
+
+          git fetch origin main --depth=1
+
+          BASE=$(git show origin/main:VERSION | tr -d '[:space:]')
+          HEAD_VERSION=$(tr -d '[:space:]' < VERSION)
+
+          # Job odpala się też po własnym pushu (zdarzenie synchronize). Jeśli
+          # numer już się różni od main, robota jest zrobiona — wychodzimy,
+          # zamiast podbijać w kółko przy każdym przebiegu.
+          if [ "$BASE" != "$HEAD_VERSION" ]; then
+            echo "VERSION już podbity: main ma $BASE, gałąź ma $HEAD_VERSION. Nic do roboty."
+            exit 0
+          fi
+
+          if ! printf '%s' "$BASE" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error title=Zły format VERSION::'$BASE' to nie jest X.Y.Z — podbij ręcznie."
+            exit 1
+          fi
+
+          MAJOR=${BASE%%.*}
+          REST=${BASE#*.}
+          MINOR=${REST%%.*}
+          PATCH=${REST#*.}
+          NEXT="${MAJOR}.${MINOR}.$((PATCH + 1))"
+
+          echo "$NEXT" > VERSION
+
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add VERSION
+          git commit -m "chore: release ${NEXT}"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
+
+          echo "### ⬆️ VERSION $BASE → $NEXT" >> "$GITHUB_STEP_SUMMARY"
