@@ -68,3 +68,24 @@ updates:
     directory: /backend
     schedule:
       interval: monthly
+
+  # Obrazy w plikach compose — postgres i nginx. To ŚWIADOMIE osobne wpisy:
+  # ekosystem `docker` powyżej czyta wyłącznie Dockerfile'e, a pliki compose
+  # obsługuje u Dependabota inny ekosystem, `docker-compose`. Bez tych dwóch
+  # pozycji postgres i nginx nie dostawały żadnych aktualizacji — i nie
+  # dostały ani jednej przez całe życie repo (nginx stał na 1.27, gdy było
+  # już 1.31).
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: docker-compose
+    directory: /deploy
+    schedule:
+      interval: monthly
+    ignore:
+      # Postgres tylko w obrębie majora. Przeskok 16 → 17 to migracja danych,
+      # nie podmiana obrazu — na maszynie z 1 GB RAM i bez backupów robi się
+      # to świadomie i ręcznie, a nie merge'em PR-a od bota.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
