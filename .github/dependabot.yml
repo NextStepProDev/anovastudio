@@ -75,17 +75,25 @@ updates:
   # pozycji postgres i nginx nie dostawały żadnych aktualizacji — i nie
   # dostały ani jednej przez całe życie repo (nginx stał na 1.27, gdy było
   # już 1.31).
+  #
+  # Blokada majorów Postgresa musi być w OBU wpisach. Oba compose montują
+  # trwały wolumen pod /var/lib/postgresql/data, a Postgres odmawia startu,
+  # gdy katalog z danymi założyła inna wersja główna ("database files are
+  # incompatible with server"). Podbicie majora to migracja danych — zrzut
+  # starą wersją, skasowanie wolumenu, wczytanie do nowej — więc sam merge
+  # PR-a kończy się bazą, która nie wstaje. Dev trzyma się przy tym tej samej
+  # wersji co produkcja; rozjazd tutaj to testowanie na innym silniku bazy.
   - package-ecosystem: docker-compose
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker-compose
     directory: /deploy
     schedule:
       interval: monthly
     ignore:
-      # Postgres tylko w obrębie majora. Przeskok 16 → 17 to migracja danych,
-      # nie podmiana obrazu — na maszynie z 1 GB RAM i bez backupów robi się
-      # to świadomie i ręcznie, a nie merge'em PR-a od bota.
       - dependency-name: postgres
         update-types: ["version-update:semver-major"]
