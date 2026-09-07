@@ -1,6 +1,10 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    # Trzyma się tej samej wersji głównej co produkcja (patrz deploy/docker-
+    # compose.prod.yml). Rozjazd tutaj to testowanie na innym silniku bazy.
+    # Lokalna baza jest odtwarzalna, więc przy zmianie majora wystarczy
+    # `docker compose down -v` i start od nowa.
+    image: postgres:17-alpine
     container_name: anovastudio-postgres
     restart: unless-stopped
     environment:
