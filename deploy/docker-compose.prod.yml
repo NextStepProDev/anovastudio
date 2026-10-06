@@ -8,9 +8,11 @@ services:
   postgres:
     # Migracja 16 -> 17 przeprowadzona 07.09.2026 zrzutem i odtworzeniem, nie
     # podmianą obrazu: Postgres odmawia startu, gdy katalog z danymi założyła
-    # inna wersja główna. Dlatego 17 dostaje WŁASNY wolumen (_v17), a stary
-    # zostaje nietknięty jako droga powrotu — cofnięcie tego commita i deploy
-    # wracają na 16 z kompletem danych.
+    # inna wersja główna. Dlatego 17 dostaje WŁASNY wolumen (_v17). Stary
+    # wolumen z 16 był drogą powrotu przez okres karencji i został usunięty
+    # 06.10.2026 — powrotu na 16 już nie ma. Przy następnej wersji głównej
+    # powtórzyć ten schemat: nowy wolumen obok, stary skasować dopiero
+    # po karencji.
     image: postgres:17-alpine
     container_name: anovastudio-postgres-prod
     mem_limit: 192m
@@ -146,9 +148,5 @@ services:
 
 volumes:
   anovastudio_postgres_data_prod_v17:
-  # Dane sprzed migracji na Postgresa 17. Deklaracja MUSI tu zostać, inaczej
-  # `docker compose down -v` albo sprzątanie wolumenów skasuje jedyną kopię
-  # stanu z szesnastki. Usunąć dopiero po okresie karencji, świadomie.
-  anovastudio_postgres_data_prod:
   anovastudio_uploads_prod:
   anovastudio_image_cache_prod:
