@@ -54,10 +54,15 @@ ssh anova "sudo rclone config create gdrive-crypt crypt remote=gdrive:anova-back
 ssh anova "sudo /usr/local/bin/anova-backup.sh; sudo tail -5 /var/log/anova-backup.log; sudo rclone ls gdrive-crypt:"
 ```
 
-**5. Cron** — dopiero gdy krok 4 przeszedł (powtórzenie komendy nie zdubluje wpisu):
+**5. Cron** — dopiero gdy krok 4 przeszedł. Obraz Ubuntu od Oracle **nie ma crona**
+(`crontab: command not found`), więc najpierw instalacja. `timeout 1h`, żeby przebieg
+zawieszony na wysyłce (patrz niżej) nie nałożył się na następny; powtórzenie komendy
+nie zdubluje wpisu:
 
 ```bash
-ssh anova "(sudo crontab -l 2>/dev/null | grep -v anova-backup; echo '0 3 * * * /usr/local/bin/anova-backup.sh') | sudo crontab -"
+ssh anova "sudo apt-get install -y cron && systemctl is-active cron"
+J="0 3 * * * timeout 1h /usr/local/bin/anova-backup.sh"
+ssh anova "(sudo crontab -l 2>/dev/null | grep -v anova-backup; echo '$J') | sudo crontab -"
 ```
 
 **6. Alarm (zalecane)** — check na [healthchecks.io](https://healthchecks.io)
@@ -66,6 +71,17 @@ z okresem 1 dzień; URL **tylko** na serwer, nigdy do repo:
 ```bash
 ssh anova "echo 'HEALTHCHECK_URL=https://hc-ping.com/TWOJ-UUID' | sudo tee /etc/anova-backup.env >/dev/null && sudo chmod 600 /etc/anova-backup.env"
 ```
+
+---
+
+**Znany problem: wysyłka na Dysk się zacina.** Sekcja `[gdrive]` skopiowana z fire-academy
+nie ma własnego `client_id`, więc rclone używa wbudowanego klucza, który dzielą wszyscy
+jego użytkownicy. Google limituje go wspólnie (`Error 403: Quota exceeded … Requests per
+minute`, `project_number:202264815644`, widać dopiero przy `-vv`). Mały zrzut bazy zwykle
+przechodzi, archiwum zdjęć potrafi utknąć na długie minuty. Nic nie przepada: kopie zostają
+w `/backups`, a następny udany przebieg dośle brakujące. Naprawa: własny klucz OAuth
+w Google Cloud (Drive API, aplikacja **opublikowana** — w trybie testowym token wygasa po
+7 dniach) i ponowna autoryzacja remote'u `gdrive` — to samo dotyczy fire-academy i climbing.
 
 ---
 
