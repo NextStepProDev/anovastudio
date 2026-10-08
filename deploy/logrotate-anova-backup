@@ -1,0 +1,19 @@
+# Rotacja logu nocnej kopii zapasowej.
+#
+# rclone dopisuje do niego przy każdym przebiegu i nic go nie przycina. Rośnie
+# wolno, na dysku dzielonym z bazą — a zapchany dysk to dokładnie to, co psuje
+# kopię, którą ten log opisuje.
+#
+# Instalowany do /etc/logrotate.d/anova-backup przez deploy.yml.
+
+/var/log/anova-backup.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    # copytruncate, nie create: rclone trzyma plik otwarty przez --log-file,
+    # więc przy zwykłej zmianie nazwy pisałby dalej do skasowanego pliku.
+    copytruncate
+}
