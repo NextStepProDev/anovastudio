@@ -83,6 +83,11 @@ fail() {
 }
 
 trap 'fail "nieoczekiwany błąd w linii ${LINENO} (kod $?)"' ERR
+# Cron uruchamia skrypt przez `timeout 1h`, który po czasie wysyła TERM całej
+# grupie procesów. Bez tej pułapki przebieg ubity w połowie wysyłki nie zostawiał
+# w logu nic poza ostatnim „Copy to …” i nie pingował /fail — dokładnie tak
+# wyglądał zawieszony upload z 08.10.2026 (limit Google, patrz RESTORE.md).
+trap 'fail "przerwany sygnałem (np. limit czasu z crona) — ostatni krok w linii wyżej"' TERM INT
 
 mkdir -p "$DB_DIR" "$FILES_DIR"
 log "=== Backup start ==="
@@ -180,7 +185,8 @@ ping_healthcheck ""
 # Skrypt i rotację logu instaluje deploy.yml. Ręcznie, raz, zostaje:
 #   1. rclone + remote `gdrive-crypt:` — RESTORE.md, „Pierwsza konfiguracja”
 #   2. pierwszy przebieg na próbę:  sudo /usr/local/bin/anova-backup.sh
-#   3. cron (dopiero gdy krok 2 przeszedł):
-#        (sudo crontab -l 2>/dev/null | grep -v anova-backup; echo "0 3 * * * /usr/local/bin/anova-backup.sh") | sudo crontab -
+#   3. cron (dopiero gdy krok 2 przeszedł; obraz Oracle nie ma crona — najpierw
+#      `sudo apt-get install -y cron`):
+#        (sudo crontab -l 2>/dev/null | grep -v anova-backup; echo "0 3 * * * timeout 1h /usr/local/bin/anova-backup.sh") | sudo crontab -
 #   4. alarm (zalecane): check na healthchecks.io z dobowym okresem, URL do
 #        /etc/anova-backup.env jako HEALTHCHECK_URL=..., chmod 600.
