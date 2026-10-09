@@ -6,8 +6,17 @@ raz (sekcja „Pierwsza konfiguracja”).
 
 | co | lokalnie | dni | na Dysku Google (zaszyfrowane) |
 |---|---|---|---|
-| zrzut bazy Strapi | `/backups/db/RRRR-MM-DD.sql.gz` | 7 | 90 |
-| wgrane pliki (zdjęcia zespołu, galeria) | `/backups/files/RRRR-MM-DD.tar.gz` | 7 | 90 |
+| zrzut bazy Strapi (co noc) | `/backups/db/RRRR-MM-DD.sql.gz` | 7 | 40 |
+| wgrane pliki (zdjęcia zespołu, galeria) — **tylko gdy się zmieniły**, najrzadziej co 30 dni | `/backups/files/RRRR-MM-DD.tar.gz` | 7, najnowsze zawsze | 40 |
+
+**Archiwum zdjęć nie powstaje co noc.** Skrypt porównuje listę plików (nazwa, rozmiar,
+data modyfikacji) z poprzednią i pakuje zdjęcia tylko wtedy, gdy coś się zmieniło —
+albo gdy ostatnie archiwum ma 30 dni, żeby przycinanie Dysku po 40 dniach nigdy nie
+zostawiło go bez archiwum. **Każde archiwum jest pełne**, nie przyrostowe. Do
+odtworzenia bierzesz **najnowszy zrzut bazy i najnowsze archiwum zdjęć z tego samego
+dnia albo wcześniejsze** — brak nowszego archiwum znaczy dokładnie tyle, że zdjęcia
+od tamtej pory się nie zmieniły. Stan porównania: `/var/lib/anova-backup/files-state`;
+jego skasowanie wymusza archiwum przy najbliższym przebiegu.
 
 Zdalny dysk to `gdrive-crypt:` — remote typu `crypt`, czyli rclone szyfruje pliki
 **przed** wysłaniem i Google nie widzi ani treści, ani nazw. Bez haseł tego remote'u
@@ -90,10 +99,16 @@ w Google Cloud (Drive API, aplikacja **opublikowana** — w trybie testowym toke
 Jeśli pliki są jeszcze w `/backups` na serwerze, pomiń ten krok. Jeśli nie:
 
 ```bash
-sudo rclone ls gdrive-crypt:db | sort -k2 | tail      # co jest dostępne
-sudo rclone copy gdrive-crypt:db/2026-10-08.sql.gz /tmp/restore/
-sudo rclone copy gdrive-crypt:files/2026-10-08.tar.gz /tmp/restore/
+sudo rclone ls gdrive-crypt:db | sort -k2 | tail      # zrzuty bazy: co noc
+sudo rclone ls gdrive-crypt:files | sort -k2 | tail   # zdjęcia: tylko dni ze zmianą
+sudo rclone copy gdrive-crypt:db/2026-10-20.sql.gz /tmp/restore/
+sudo rclone copy gdrive-crypt:files/2026-10-08.tar.gz /tmp/restore/   # najnowsze ≤ data zrzutu
 ```
+
+Daty zrzutu i archiwum zdjęć **nie muszą być równe** — weź najnowsze archiwum nie
+późniejsze niż zrzut. Ono zawsze pasuje, bo gdyby zdjęcia zmieniły się przed zrzutem,
+powstałoby nowsze. Każde wcześniejsze archiwum może nie mieć zdjęć, które baza już zna;
+NOWSZE od zrzutu ma najwyżej zdjęcia, których baza z tamtego dnia nie zna (nieszkodliwe).
 
 Sprawdź, czy zrzut jest kompletny, **zanim** cokolwiek skasujesz:
 
@@ -159,7 +174,8 @@ curl -s https://api.anovastudio.pl/api/staffs | head -c 200; echo
 
 Zero osób w zespole albo zero plików po odtworzeniu = zrzut był pusty. Wróć do kroku 1
 i weź starszy. Na koniec otwórz Zespół i Galerię w przeglądarce — zdjęcia muszą się
-wczytać, bo baza i pliki muszą pochodzić z tego samego dnia.
+wczytać. Połamane obrazki znaczą, że archiwum zdjęć nie pasuje do zrzutu: wziąłeś
+starsze niż najnowsze archiwum sprzed daty zrzutu (krok 1).
 
 ---
 
