@@ -47,12 +47,25 @@ COMPOSE_DIR="/home/ubuntu/anovastudio"
 # poniżej. Stąd jawne sprawdzenie istnienia wolumenu przed pakowaniem.
 UPLOADS_VOLUME="anovastudio_anovastudio_uploads_prod"
 
-# Lokalnie krótko: to tylko poczekalnia i dzieli dysk z bazą. Zdalnie długo,
-# bo po kopię sięga się wtedy, gdy problem wyszedł późno — a „późno” to cały
-# powód, dla którego ona istnieje. Dane Anovy to dziesiątki MB, 90 dni to
-# kilka GB na Dysku.
+# Lokalnie krótko: to tylko poczekalnia i dzieli dysk z bazą. Zdalnie dłużej,
+# bo po kopię sięga się wtedy, gdy problem wyszedł późno. 40, nie 90 dni: Dysk
+# (15 GB) dzieli konto z fire-academy i climbing, a przy 90 dniach codziennych
+# archiwów zdjęć całej trójki zabrakłoby na nim miejsca (policzone 09.10.2026).
 LOCAL_RETENTION_DAYS=7
-REMOTE_RETENTION_DAYS=90
+REMOTE_RETENTION_DAYS=40
+
+# Archiwum zdjęć powstaje tylko, gdy zdjęcia się zmieniły — zmieniają się kilka
+# razy w roku, a każde archiwum to komplet (~35 MB), więc codzienna kopia tego
+# samego zjadała Dysk bez żadnego zysku. Każde archiwum nadal jest PEŁNE:
+# odtworzenie to najnowszy zrzut bazy + najnowsze archiwum zdjęć sprzed niego,
+# bo brak nowszego archiwum znaczy właśnie, że zdjęcia się nie zmieniły.
+#
+# Odciski (ścieżka, rozmiar, data modyfikacji każdego pliku) trzyma plik stanu.
+# Bez zmian archiwum i tak powstaje co FILES_REFRESH_DAYS dni: musi to być mniej
+# niż REMOTE_RETENTION_DAYS, inaczej przycinanie Dysku skasowałoby jedyne
+# archiwum. Brak pliku stanu (nowy serwer) = archiwum od razu.
+FILES_REFRESH_DAYS=30
+FILES_STATE="/var/lib/anova-backup/files-state"
 
 # Poza repo celowo: URL pingu jest sekretem — kto go zna, może zgłosić sukces,
 # którego nie było. Plik na serwerze, tylko dla roota (chmod 600). Brak pliku =
@@ -89,8 +102,11 @@ trap 'fail "nieoczekiwany błąd w linii ${LINENO} (kod $?)"' ERR
 # wyglądał zawieszony upload z 08.10.2026 (limit Google, patrz RESTORE.md).
 trap 'fail "przerwany sygnałem (np. limit czasu z crona) — ostatni krok w linii wyżej"' TERM INT
 
-mkdir -p "$DB_DIR" "$FILES_DIR"
+mkdir -p "$DB_DIR" "$FILES_DIR" "$(dirname "$FILES_STATE")"
 log "=== Backup start ==="
+
+[ "$FILES_REFRESH_DAYS" -lt "$REMOTE_RETENTION_DAYS" ] \
+    || fail "FILES_REFRESH_DAYS (${FILES_REFRESH_DAYS}) musi być mniejsze niż REMOTE_RETENTION_DAYS (${REMOTE_RETENTION_DAYS}) — inaczej Dysk zostałby bez archiwum zdjęć"
 
 # --- warunki wstępne ---------------------------------------------------------
 
@@ -134,21 +150,50 @@ log "DB OK: $(du -sh "$DB_BACKUP" | cut -f1)"
 
 # --- wgrane pliki ------------------------------------------------------------
 
-log "Files archive -> ${FILES_BACKUP}.part"
-docker run --rm \
-    -v "${UPLOADS_VOLUME}:/data:ro" \
-    -v "${FILES_DIR}:/backup" \
-    alpine tar czf "/backup/${DATE}.tar.gz.part" -C /data .
+# Odcisk zawartości wolumenu: ścieżka|rozmiar|data modyfikacji każdego pliku,
+# posortowane i zhaszowane. Dodanie, usunięcie i podmiana zdjęcia go zmieniają.
+# Liczony PRZED pakowaniem: jeśli coś dojdzie w międzyczasie, trafi do archiwum,
+# a jutrzejszy odcisk będzie inny — czyli najwyżej jedno archiwum za dużo,
+# nigdy za mało.
+FILES_FP=$(docker run --rm -v "${UPLOADS_VOLUME}:/data:ro" alpine \
+    sh -c 'cd /data && find . -type f -exec stat -c "%n|%s|%Y" {} + | sort' \
+    | sha256sum | cut -d' ' -f1)
 
-# Odczyt całego archiwum to różnica między „tar skończył z kodem 0”
-# a „archiwum da się otworzyć” — łapie i uszkodzony strumień, i ucięcie
-# przy zapchanym dysku.
-if ! tar tzf "${FILES_BACKUP}.part" >/dev/null 2>&1; then
-    rm -f "${FILES_BACKUP}.part"
-    fail "archiwum plików nie daje się odczytać — nie publikuję"
+PREV_FP=""
+PREV_AT=0
+if [ -r "$FILES_STATE" ]; then
+    read -r PREV_FP PREV_AT < "$FILES_STATE" || true
 fi
-mv "${FILES_BACKUP}.part" "$FILES_BACKUP"
-log "Files OK: $(du -sh "$FILES_BACKUP" | cut -f1)"
+# Uszkodzony stan (np. zapis ucięty przy pełnym dysku) nie może wywracać kopii
+# co noc: śmieci zamiast liczby = traktuj jak brak stanu, czyli zrób archiwum —
+# a zapis po nim naprawi plik.
+case "$PREV_AT" in
+    ''|*[!0-9]*) PREV_FP=""; PREV_AT=0 ;;
+esac
+FILES_AGE_DAYS=$(( ( $(date +%s) - PREV_AT ) / 86400 ))
+
+if [ "$FILES_FP" != "$PREV_FP" ] || [ "$FILES_AGE_DAYS" -ge "$FILES_REFRESH_DAYS" ]; then
+    log "Files archive -> ${FILES_BACKUP}.part"
+    docker run --rm \
+        -v "${UPLOADS_VOLUME}:/data:ro" \
+        -v "${FILES_DIR}:/backup" \
+        alpine tar czf "/backup/${DATE}.tar.gz.part" -C /data .
+
+    # Odczyt całego archiwum to różnica między „tar skończył z kodem 0”
+    # a „archiwum da się otworzyć” — łapie i uszkodzony strumień, i ucięcie
+    # przy zapchanym dysku.
+    if ! tar tzf "${FILES_BACKUP}.part" >/dev/null 2>&1; then
+        rm -f "${FILES_BACKUP}.part"
+        fail "archiwum plików nie daje się odczytać — nie publikuję"
+    fi
+    mv "${FILES_BACKUP}.part" "$FILES_BACKUP"
+    # Stan zapisywany dopiero po opublikowaniu archiwum: padnięty przebieg
+    # zostawia stary odcisk, więc jutro archiwum powstanie jeszcze raz.
+    printf '%s %s\n' "$FILES_FP" "$(date +%s)" > "$FILES_STATE"
+    log "Files OK: $(du -sh "$FILES_BACKUP" | cut -f1)"
+else
+    log "Files: zdjęcia bez zmian od $(date -d "@${PREV_AT}" +%F 2>/dev/null || echo "${FILES_AGE_DAYS} dni") — najnowsze archiwum nadal aktualne, nowego nie robię"
+fi
 
 # --- poza serwer -------------------------------------------------------------
 
@@ -173,7 +218,12 @@ rclone delete "$REMOTE" --min-age "${REMOTE_RETENTION_DAYS}d" --log-file="$LOG" 
 # --- lokalne sprzątanie ------------------------------------------------------
 
 find "$DB_DIR" -name "*.sql.gz" -mtime "+${LOCAL_RETENTION_DAYS}" -delete
-find "$FILES_DIR" -name "*.tar.gz" -mtime "+${LOCAL_RETENTION_DAYS}" -delete
+# Najnowsze archiwum zdjęć zostaje zawsze, nawet starsze niż 7 dni: przy
+# zdjęciach bez zmian to ono jest aktualną kopią, a odtworzenie z samego
+# serwera (bez Dysku) ma dalej mieć z czego wrócić. Nazwy to daty, więc
+# sortowanie po nazwie = po wieku.
+NEWEST_FILES=$(find "$FILES_DIR" -maxdepth 1 -name "*.tar.gz" | sort | tail -1)
+find "$FILES_DIR" -name "*.tar.gz" -mtime "+${LOCAL_RETENTION_DAYS}" ! -path "${NEWEST_FILES:-/nic}" -delete
 # Resztki po przebiegu, który padł w połowie.
 find "$DB_DIR" "$FILES_DIR" -name "*.part" -mtime +1 -delete
 
