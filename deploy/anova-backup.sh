@@ -211,8 +211,13 @@ rclone copy /backups "$REMOTE" --exclude "*.part" --log-file="$LOG" --log-level 
     || fail "wysyłka na Drive (${REMOTE}) nie powiodła się — kopie zostały lokalnie w /backups; szczegóły rclone wyżej w logu"
 
 # Osobno i wolno. --min-age to filtr, więc nic świeższego nie może się złapać.
+# --drive-use-trash=false: kasowanie na stałe, z pominięciem kosza Dysku. Kosz
+# wlicza się do 15 GB konta, a Google opróżnia go dopiero po 30 dniach — każda
+# kopia zajmowała więc miejsce 70 dni zamiast 40. W najgorszym przypadku
+# (codzienne archiwa zdjęć wszystkich trzech projektów) to 13,2 GB z 15
+# (policzone 12.10.2026). Przeterminowanej kopii nie ma po co odzyskiwać.
 log "Prune remote older than ${REMOTE_RETENTION_DAYS}d"
-rclone delete "$REMOTE" --min-age "${REMOTE_RETENTION_DAYS}d" --log-file="$LOG" --log-level NOTICE \
+rclone delete "$REMOTE" --min-age "${REMOTE_RETENTION_DAYS}d" --drive-use-trash=false --log-file="$LOG" --log-level NOTICE \
     || fail "sprzątanie starych kopii na Drive nie powiodło się — dzisiejsza kopia jest wysłana i lokalnie"
 
 # --- lokalne sprzątanie ------------------------------------------------------
