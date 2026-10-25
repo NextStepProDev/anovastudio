@@ -1,7 +1,17 @@
 import type { Core } from '@strapi/strapi';
 
+// Images a browser shows everywhere — not `image/*`. An iPhone photo copied off
+// the phone as HEIC went in without an error and appeared on the site only in
+// Safari; Chrome, Firefox and Edge showed an empty frame (audit, 26.10.2026).
+// SVG stays allowed as before: Strapi does not clean scripts out of it, but the
+// CSP Strapi sends on /uploads (`script-src 'self'`, no inline) keeps them from running.
 const allowedMediaTypes = [
-  'image/*',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/avif',
+  'image/gif',
+  'image/svg+xml',
   'video/*',
   'audio/*',
   'application/pdf',
