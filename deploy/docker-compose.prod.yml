@@ -139,9 +139,12 @@ services:
     # 32m padało OOM-killem przy wielu równoległych uploadach do Media Library
     # (27 zdjęć naraz po TLS/HTTP2) — 64m daje zapas na bufory połączeń.
     mem_limit: 64m
+    # Tylko IPv4. Bez adresu Docker wystawia porty także na IPv6, a ta droga
+    # omija zaporę originu (deploy/origin-firewall.sh), która filtruje IPv4.
+    # Cloudflare łączy się z serwerem po IPv4 — rekordy domeny to rekordy A.
     ports:
-      - "80:80"
-      - "443:443"
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./certs:/etc/nginx/certs:ro

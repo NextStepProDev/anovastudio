@@ -1,0 +1,14 @@
+[Unit]
+Description=Anova Studio: ports 80/443 only from Cloudflare (DOCKER-USER)
+# Reguły iptables nie przeżywają restartu serwera — ta usługa przywraca je,
+# gdy Docker już stoi. PartOf: restart Dockera uruchamia ją ponownie.
+After=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/anova-origin-firewall.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target docker.service
