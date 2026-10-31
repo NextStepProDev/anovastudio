@@ -142,20 +142,32 @@ jobs:
             # początku projektu. Kasujemy więc jawnie, po tagach: zostają obrazy
             # trzymane przez kontenery i KEEP najnowszych z każdego repozytorium —
             # tyle zapasu, żeby ręczny rollback nie wymagał pobierania z GHCR.
+            # Liczymy RÓŻNE obrazy (po ID), nie wiersze z tagiem: po deployu
+            # z tagiem `main` albo `sha-…` jeden obraz ma dwa tagi, zajmował
+            # oba miejsca i wersja do rollbacku szła do kosza. Wiersze `<none>`
+            # odpadają przed liczeniem (dziś łapie je też `dangling=false`, ale
+            # reguła nie ma od tego filtra zależeć). Kasujemy wszystkie tagi
+            # trzeciego i starszych obrazów. Obrazy w użyciu chronimy po ID
+            # (12 znaków, jak w `docker images`), nie po nazwie — kontener
+            # uruchomiony z innego tagu tego samego obrazu też się liczy.
             # `|| true` — sprzątanie nie ma prawa ubić deployu.
             KEEP=2
-            IN_USE=$(docker ps -a --format '{{.Image}}' | sort -u)
+            IN_USE=$(docker ps -aq | xargs -r docker inspect --format '{{.Image}}' \
+              | sed 's/^sha256://' | cut -c1-12 | tr '\n' ' ' || true)
             for REPO in anovastudio-frontend anovastudio-backend; do
               docker images "ghcr.io/nextstepprodev/${REPO}" \
                 --filter 'dangling=false' \
-                --format '{{.CreatedAt}}\t{{.Repository}}:{{.Tag}}' \
-                | sort -r | tail -n +$((KEEP + 1)) | cut -f2 \
+                --format '{{.CreatedAt}}\t{{.ID}} {{.Repository}}:{{.Tag}}' \
+                | sort -r | cut -f2 \
+                | awk -v keep="$KEEP" -v used="$IN_USE" '
+                    BEGIN { n = split(used, u, " "); for (i = 1; i <= n; i++) inuse[u[i]] = 1 }
+                    $2 ~ /:<none>$/ { next }
+                    !($1 in rank) { rank[$1] = ++k }
+                    rank[$1] > keep && !($1 in inuse) { print $2 }' \
                 | while read -r IMG; do
-                    if ! printf '%s\n' "$IN_USE" | grep -qxF "$IMG"; then
-                      echo "cleanup: usuwam $IMG"
-                      docker rmi "$IMG" || true
-                    fi
-                  done
+                    echo "cleanup: usuwam $IMG"
+                    docker rmi "$IMG" || true
+                  done || true
             done
             # Warstwy osierocone po usuniętych tagach (ten wariant, bez filtra, działa).
             docker image prune -f || true
@@ -174,6 +186,19 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
+            # Healthy to za mało: poprzednia wersja też jest healthy, więc deploy,
+            # w którym compose nie podmienił kontenera, przechodził tę kontrolę.
+            # Oba kontenery muszą chodzić na właśnie wdrażanym tagu (wersja jest
+            # sprawdzona wzorcem w "Resolve deploy version", można ją tu wkleić).
+            VERSION="${{ steps.version.outputs.version }}"
+            for c in anovastudio-strapi-prod anovastudio-frontend-prod; do
+              IMAGE=$(docker inspect --format '{{.Config.Image}}' "$c" 2>/dev/null || echo "missing")
+              if [ "${IMAGE##*:}" != "$VERSION" ]; then
+                echo "ERROR: $c runs '$IMAGE', expected tag '$VERSION'."
+                exit 1
+              fi
+              echo "$c runs $IMAGE"
+            done
             echo "Waiting for containers to become healthy..."
             for i in $(seq 1 16); do
               STRAPI=$(docker inspect --format='{{.State.Health.Status}}' anovastudio-strapi-prod 2>/dev/null || echo "missing")
