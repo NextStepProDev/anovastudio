@@ -118,7 +118,8 @@ export default function PolitykaPrywatnosciPage() {
         <p>Korzystamy z firm, które przetwarzają dane w naszym imieniu:</p>
         <List>
           <li>
-            <strong>Dostawca serwera</strong> — serwer, na którym działa strona.
+            <strong>Dostawca serwera</strong> (centrum danych w Unii Europejskiej) — serwer, na
+            którym działa strona.
           </li>
           <li>
             <strong>Cloudflare</strong> (Cloudflare, Inc., USA) — pośredniczy w ruchu do strony i
