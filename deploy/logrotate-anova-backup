@@ -1,10 +1,10 @@
-# Rotacja logu nocnej kopii zapasowej.
+# Rotation of the nightly backup's log.
 #
-# rclone dopisuje do niego przy każdym przebiegu i nic go nie przycina. Rośnie
-# wolno, na dysku dzielonym z bazą — a zapchany dysk to dokładnie to, co psuje
-# kopię, którą ten log opisuje.
+# rclone appends to it on every run and nothing trims it. It grows slowly, on the disk
+# shared with the database — and a full disk is exactly what breaks the backup this log
+# describes.
 #
-# Instalowany do /etc/logrotate.d/anova-backup przez deploy.yml.
+# Installed to /etc/logrotate.d/anova-backup by deploy.yml.
 
 /var/log/anova-backup.log {
     weekly
@@ -13,7 +13,7 @@
     delaycompress
     missingok
     notifempty
-    # copytruncate, nie create: rclone trzyma plik otwarty przez --log-file,
-    # więc przy zwykłej zmianie nazwy pisałby dalej do skasowanego pliku.
+    # copytruncate, not create: rclone keeps the file open through --log-file, so with an
+    # ordinary rename it would keep writing to the deleted file.
     copytruncate
 }

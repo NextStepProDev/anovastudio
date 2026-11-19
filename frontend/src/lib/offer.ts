@@ -1,15 +1,15 @@
 /**
- * Treść oferty — świadomie trzymana na sztywno w kodzie, nie w Strapi.
- * To zamknięty, rzadko zmienny zestaw usług (jedna cena za ustalony czas na
- * usługę), a redakcyjny układ „menu zabiegów" jest ściśle sprzężony z treścią —
- * modelowanie tego w CMS-ie było overkillem. Zmiana ceny/tekstu = edycja tego
- * pliku. Listy w mianowniku (czytają się samodzielnie, bez nagłówka „Pomagamy w").
+ * The offer content — deliberately hardcoded, not in Strapi.
+ * It is a closed, rarely changing set of services (one price for a fixed time per
+ * service), and the editorial "treatment menu" layout is tightly coupled with the
+ * content — modelling it in the CMS was overkill. A price/text change = an edit of this
+ * file. Lists in the nominative (they read on their own, without a "Pomagamy w" heading).
  */
 
-/** "oba" = usługa widoczna w obu lokalizacjach. */
+/** "oba" = the service is shown in both locations. */
 export type OfferLocation = "libiaz" | "katowice" | "oba";
 
-/** Zakres usługi: etykieta (małe kapitaliki) + lista pozycji. */
+/** A service's scope: a label (small caps) + a list of items. */
 export interface OfferScope {
   label: string;
   items: string[];

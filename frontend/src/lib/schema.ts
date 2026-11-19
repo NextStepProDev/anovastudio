@@ -1,20 +1,20 @@
 import { BRAND, CONTACT, SITE_URL } from "@/lib/contact";
 import { OFFER_SERVICES } from "@/lib/offer";
 
-/** "200 zł" → 200. Ceny w ofercie są tekstem (redakcyjnym), schema chce liczby. */
+/** "200 zł" → 200. Prices in the offer are (editorial) text, the schema wants a number. */
 export function priceValue(price: string): string | null {
   const digits = price.replace(/\s/g, "").match(/\d+/);
   return digits ? digits[0] : null;
 }
 
 /**
- * Dane gabinetu dla wyszukiwarek (JSON-LD). To one zasilają wizytówkę w Google:
- * nazwa, adres, telefon, profile społecznościowe i cennik usług.
+ * The clinic's data for search engines (JSON-LD). It feeds the business card in Google:
+ * name, address, phone, social profiles and the price list of services.
  *
- * `Physiotherapy` to podtyp `MedicalBusiness` (a ten — `LocalBusiness`);
- * wypisujemy oba, żeby parser rozpoznał lokalną firmę nawet bez znajomości
- * wąskiego typu. Godzin otwarcia świadomie NIE podajemy — nie ma ich jeszcze
- * na stronie, a zmyślone byłyby gorsze niż żadne.
+ * `Physiotherapy` is a subtype of `MedicalBusiness` (and that one of `LocalBusiness`);
+ * we list both, so a parser recognises a local business even without knowing the narrow
+ * type. Opening hours are deliberately NOT given — they are not on the site yet, and made
+ * up ones would be worse than none.
  */
 export function localBusinessSchema() {
   const offers = OFFER_SERVICES.filter(

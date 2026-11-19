@@ -12,20 +12,24 @@
     "start": "strapi start",
     "strapi": "strapi",
     "upgrade": "npx @strapi/upgrade latest",
-    "upgrade:dry": "npx @strapi/upgrade latest --dry"
+    "upgrade:dry": "npx @strapi/upgrade latest --dry",
+    "audit": "node scripts/audit-gate.mjs"
   },
   "overrides": {
     "sharp": "^0.35.0",
     "postcss": "^8.5.18",
-    "fast-uri": "^3.1.6",
-    "brace-expansion": "^5.0.9",
+    "fast-uri": "^3.1.7",
+    "brace-expansion": "^5.0.12",
     "nanoid": "^3.3.18",
-    "ip-address": "^10.4.0"
+    "ip-address": "^10.4.0",
+    "zod@4.4.3": "4.6.7",
+    "js-yaml": "^4.3.2",
+    "source-map-js": "^1.2.2"
   },
   "dependencies": {
-    "@strapi/plugin-cloud": "5.60.0",
-    "@strapi/plugin-users-permissions": "5.60.0",
-    "@strapi/strapi": "5.60.0",
+    "@strapi/plugin-cloud": "5.63.0",
+    "@strapi/plugin-users-permissions": "5.63.0",
+    "@strapi/strapi": "5.63.0",
     "pg": "8.23.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",

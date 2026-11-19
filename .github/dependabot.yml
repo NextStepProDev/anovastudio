@@ -1,4 +1,8 @@
 version: 2
+# Packages that only work at matching versions have their own groups, majors included, and
+# sit above minor-and-patch (Dependabot puts an update into the first group that matches).
+# Without them a coupled update arrives as several PRs that each fail on their own — in
+# next-step-pro-climbing on 2026-11-19 react-i18next 18 needed i18next 27, and each PR was red.
 updates:
   # Frontend (Next.js)
   - package-ecosystem: npm
@@ -7,16 +11,20 @@ updates:
       interval: monthly
     open-pull-requests-limit: 5
     ignore:
-      # ESLint musi zostać na 9.x. `eslint-config-next` deklaruje peer
-      # `eslint >=9`, więc npm wpuszcza 10 bez ostrzeżenia, ale dociągnięty
-      # razem z nim `eslint-plugin-react` woła `context.getFilename()` —
-      # API usunięte w ESLint 10. Lint pada wtedy od razu:
+      # ESLint must stay on 9.x. `eslint-config-next` declares the peer `eslint >=9`, so npm
+      # lets 10 in without a warning, but the `eslint-plugin-react` it pulls in calls
+      # `context.getFilename()` — an API removed in ESLint 10. Lint then fails at once:
       # "Error while loading rule 'react/display-name'".
-      # Odblokować dopiero, gdy Next zacznie bundlować wtyczkę zgodną z 10.
+      # Unblock only when Next bundles a plugin that works with 10.
       - dependency-name: eslint
         update-types: ["version-update:semver-major"]
     groups:
-      # Grupuj drobne/patch bumpy w jeden PR, żeby nie zasypać przeglądu.
+      next:
+        patterns: ["next", "eslint-config-next"]
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      tailwind:
+        patterns: ["tailwindcss", "@tailwindcss/*"]
       minor-and-patch:
         update-types:
           - minor
@@ -29,37 +37,39 @@ updates:
       interval: monthly
     open-pull-requests-limit: 5
     ignore:
-      # TypeScript musi zostać na 5.x — tyle używa sam Strapi (@strapi/strapi
-      # zależy od TS 5.9) i pod taką wersję generuje tsconfig. Bump do 7 wszedł
-      # niezauważony, bo `strapi build` kompiluje własnym TS-em; łamał za to
-      # każde `npx tsc` w tym katalogu (`moduleResolution: Node` zniknęło w TS 7).
+      # TypeScript must stay on 5.x — that is what Strapi itself uses (@strapi/strapi depends
+      # on TS 5.9) and the version its generated tsconfig targets. A bump to 7 got in
+      # unnoticed, because `strapi build` compiles with its own TS; it broke every `npx tsc`
+      # in this directory instead (`moduleResolution: Node` is gone in TS 7).
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
-      # React 19 wymaga panelu admina Strapi zbudowanego pod 19 — idzie razem
-      # z majorem Strapi, nie osobno.
+      # React 19 needs a Strapi admin panel built for 19 — it comes with a Strapi major, not
+      # on its own. Even Strapi 5.63 declares `react ^18` as the panel's peer.
       - dependency-name: react
         update-types: ["version-update:semver-major"]
       - dependency-name: react-dom
         update-types: ["version-update:semver-major"]
-      # react-router-dom siedzi w package.json tylko dlatego, że Strapi
-      # scaffolduje go pod panel admina — nic w src/ go nie importuje.
-      # @strapi/admin trzyma go w peer jako `^6.30.3`, więc bump do 7 wywala
-      # `npm ci` na ERESOLVE. Ta wersja idzie razem z majorem Strapi.
+      # react-router-dom is in package.json only because Strapi scaffolds it for the admin
+      # panel — nothing in src/ imports it. @strapi/admin keeps it as a peer `^6.30.3`, so a
+      # bump to 7 breaks `npm ci` with ERESOLVE. It moves together with a Strapi major.
       - dependency-name: react-router-dom
         update-types: ["version-update:semver-major"]
     groups:
+      # All @strapi/* packages are pinned to one exact version and must move together.
+      strapi:
+        patterns: ["@strapi/*"]
       minor-and-patch:
         update-types:
           - minor
           - patch
 
-  # Akcje GitHub w workflowach CI/CD
+  # GitHub Actions in the CI/CD workflows
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
 
-  # Obrazy bazowe w Dockerfile'ach
+  # Base images in the Dockerfiles
   - package-ecosystem: docker
     directory: /frontend
     schedule:
@@ -69,20 +79,19 @@ updates:
     schedule:
       interval: monthly
 
-  # Obrazy w plikach compose — postgres i nginx. To ŚWIADOMIE osobne wpisy:
-  # ekosystem `docker` powyżej czyta wyłącznie Dockerfile'e, a pliki compose
-  # obsługuje u Dependabota inny ekosystem, `docker-compose`. Bez tych dwóch
-  # pozycji postgres i nginx nie dostawały żadnych aktualizacji — i nie
-  # dostały ani jednej przez całe życie repo (nginx stał na 1.27, gdy było
-  # już 1.31).
+  # Images in the compose files — postgres and nginx. These are DELIBERATELY separate
+  # entries: the `docker` ecosystem above reads only Dockerfiles, and compose files are
+  # handled by another Dependabot ecosystem, `docker-compose`. Without these two entries
+  # postgres and nginx got no updates at all — not a single one in the repo's whole life
+  # (nginx sat on 1.27 when 1.31 was out).
   #
-  # Blokada majorów Postgresa musi być w OBU wpisach. Oba compose montują
-  # trwały wolumen pod /var/lib/postgresql/data, a Postgres odmawia startu,
-  # gdy katalog z danymi założyła inna wersja główna ("database files are
-  # incompatible with server"). Podbicie majora to migracja danych — zrzut
-  # starą wersją, skasowanie wolumenu, wczytanie do nowej — więc sam merge
-  # PR-a kończy się bazą, która nie wstaje. Dev trzyma się przy tym tej samej
-  # wersji co produkcja; rozjazd tutaj to testowanie na innym silniku bazy.
+  # The Postgres major block must be in BOTH entries. Both compose files mount a persistent
+  # volume at /var/lib/postgresql/data, and Postgres refuses to start when the data
+  # directory was created by another major ("database files are incompatible with
+  # server"). A major bump is a data migration — dump with the old version, drop the
+  # volume, load into the new one — so merging the PR alone ends with a database that does
+  # not start. Dev stays on the same version as production; a mismatch here would mean
+  # testing on a different database engine.
   - package-ecosystem: docker-compose
     directory: /
     schedule:

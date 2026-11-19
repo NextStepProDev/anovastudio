@@ -1,47 +1,46 @@
 #!/usr/bin/env bash
 #
-# origin-firewall.sh — porty strony (80, 443) odpowiadają tylko Cloudflare.
+# origin-firewall.sh — the site's ports (80, 443) answer Cloudflare only.
 #
-# Bez tego każdy, kto zna adres serwera, rozmawia z nginx wprost i omija
-# wszystko, co Cloudflare robi przed nim: własne reguły blokujące skanery
-# (`.env`, `.php`, …), reguły zarządzane, ochronę przed DDoS.
+# Without it anyone who knows the server's address talks to nginx directly and bypasses
+# everything Cloudflare does in front of it: our own rules blocking scanners (`.env`,
+# `.php`, …), managed rules, DDoS protection.
 #
-# Reguły siedzą we własnym łańcuchu ANOVA-ORIGIN, do którego skacze
-# DOCKER-USER. Docker wystawia porty przez NAT i ścieżkę FORWARD, więc
-# łańcuch INPUT (tam stoi REJECT z obrazu Oracle) tego ruchu nie widzi —
-# DOCKER-USER to miejsce, które Docker zostawia na takie reguły. Dopasowanie:
-#   * `--ctstate DNAT` — tylko połączenia, które Docker przekierował DO
-#     kontenera. Własne wyjścia aplikacji na 443 też przechodzą przez
-#     DOCKER-USER; w climbing blokada po samym porcie wieszała każde
-#     wywołanie na zewnątrz (504). Ruch wychodzący to SNAT, nigdy DNAT.
-#   * `--ctorigsrc` / `--ctorigdstport` — adres i port sprzed NAT, czyli
-#     odwiedzający i port wystawiony na serwerze, a nie port kontenera.
-# Ruch z samego serwera (`curl localhost`, certbot łączący się z Let's
-# Encrypt) idzie przez OUTPUT, nie FORWARD, więc go to nie dotyczy. SSH to
-# nie port Dockera — też nie. Ale SPRAWDZENIE domeny przez Let's Encrypt
-# (HTTP-01 na port 80) przychodzi z zewnątrz: przejdzie tylko przez
-# Cloudflare, więc po zmianach — `sudo certbot renew --dry-run`.
+# The rules sit in their own ANOVA-ORIGIN chain, which DOCKER-USER jumps to. Docker
+# publishes ports through NAT and the FORWARD path, so the INPUT chain (where the Oracle
+# image's REJECT sits) does not see this traffic — DOCKER-USER is the place Docker leaves
+# for such rules. Matching:
+#   * `--ctstate DNAT` — only connections Docker redirected TO a container. The
+#     application's own outgoing calls on 443 pass through DOCKER-USER too; in climbing a
+#     block by port alone hung every outbound call (504). Outgoing traffic is SNAT,
+#     never DNAT.
+#   * `--ctorigsrc` / `--ctorigdstport` — the address and port before NAT, i.e. the
+#     visitor and the port published on the server, not the container's port.
+# Traffic from the server itself (`curl localhost`, certbot talking to Let's Encrypt)
+# goes through OUTPUT, not FORWARD, so it is unaffected. SSH is not a Docker port —
+# unaffected too. But Let's Encrypt's domain CHECK (HTTP-01 on port 80) comes from
+# outside: it gets through only via Cloudflare, so after changes — `sudo certbot renew
+# --dry-run`.
 #
-# Zakresy Cloudflare bierze z /etc/anova-origin-firewall/cloudflare-v4.txt,
-# który setup-origin-firewall.sh wycina z linii `set_real_ip_from` w
-# nginx.conf — jedna lista dla obu. Brak zakresu = odwiedzający obsługiwani
-# przez tę lokalizację Cloudflare dostają „522 Connection timed out”.
+# The Cloudflare ranges come from /etc/anova-origin-firewall/cloudflare-v4.txt, which
+# setup-origin-firewall.sh cuts out of the `set_real_ip_from` lines in nginx.conf — one
+# list for both. A missing range = visitors served by that Cloudflare location get
+# "522 Connection timed out".
 #
-# Można uruchamiać wielokrotnie (łańcuch budowany od nowa). Przy liście,
-# która wygląda na uszkodzoną, nie rusza niczego — strona zamknięta dla
-# Cloudflare to strona martwa dla wszystkich.
+# Can be run repeatedly (the chain is rebuilt from scratch). With a list that looks
+# damaged it touches nothing — a site closed to Cloudflare is a site dead for everyone.
 #
-# Użycie: sudo bash origin-firewall.sh           (przy starcie robi to usługa systemd)
-#         sudo bash origin-firewall.sh --remove  (zdejmuje reguły w całości)
+# Usage: sudo bash origin-firewall.sh           (the systemd service does this at boot)
+#        sudo bash origin-firewall.sh --remove  (removes the rules entirely)
 
 set -euo pipefail
 
 RANGES_FILE="/etc/anova-origin-firewall/cloudflare-v4.txt"
 CHAIN="ANOVA-ORIGIN"
 PORTS="80 443"
-# Cloudflare publikuje 15 zakresów IPv4 (10.2026). Mniej niż 10 = lista
-# ucięta albo źle wycięta — lepiej brak filtra niż strona zamknięta dla
-# wszystkich. Ten sam próg w setup-origin-firewall.sh.
+# Cloudflare publishes 15 IPv4 ranges (10.2026). Fewer than 10 = the list is truncated
+# or badly cut — better no filter than a site closed to everyone. The same threshold is
+# in setup-origin-firewall.sh.
 MIN_RANGES=10
 
 if [[ "${EUID}" -ne 0 ]]; then
@@ -53,7 +52,7 @@ if [[ "${1:-}" == "--remove" ]]; then
   while iptables -D DOCKER-USER -j "${CHAIN}" 2>/dev/null; do :; done
   iptables -F "${CHAIN}" 2>/dev/null || true
   iptables -X "${CHAIN}" 2>/dev/null || true
-  echo "==> Zapora originu zdjęta: porty 80/443 znów otwarte dla wszystkich."
+  echo "==> Origin firewall removed: ports 80/443 open to everyone again."
   exit 0
 fi
 
@@ -61,25 +60,25 @@ RANGES=()
 while read -r line; do
   [[ -z "${line}" ]] && continue
   if [[ ! "${line}" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}/[0-9]{1,2}$ ]]; then
-    echo "BŁĄD: to nie zakres IPv4 w ${RANGES_FILE}: ${line} — nic nie zmieniono." >&2
+    echo "ERROR: not an IPv4 range in ${RANGES_FILE}: ${line} — nothing changed." >&2
     exit 1
   fi
   RANGES+=("${line}")
 done < <(cat "${RANGES_FILE}" 2>/dev/null || true)
 
 if (( ${#RANGES[@]} < MIN_RANGES )); then
-  echo "BŁĄD: za mało zakresów Cloudflare w ${RANGES_FILE}: ${#RANGES[@]}, powinno być co najmniej ${MIN_RANGES} — nic nie zmieniono." >&2
+  echo "ERROR: too few Cloudflare ranges in ${RANGES_FILE}: ${#RANGES[@]}, should be at least ${MIN_RANGES} — nothing changed." >&2
   exit 1
 fi
 
-# Przy starcie serwera usługa rusza zaraz po docker.service, który zakłada
-# DOCKER-USER chwilę później.
+# At server boot the service starts right after docker.service, which creates
+# DOCKER-USER a moment later.
 for _ in $(seq 1 30); do
   iptables -L DOCKER-USER -n >/dev/null 2>&1 && break
   sleep 2
 done
 if ! iptables -L DOCKER-USER -n >/dev/null 2>&1; then
-  echo "BŁĄD: brak łańcucha DOCKER-USER — czy Docker działa? Nic nie zmieniono." >&2
+  echo "ERROR: no DOCKER-USER chain — is Docker running? Nothing changed." >&2
   exit 1
 fi
 
@@ -96,4 +95,4 @@ done
 
 iptables -C DOCKER-USER -j "${CHAIN}" 2>/dev/null || iptables -I DOCKER-USER 1 -j "${CHAIN}"
 
-echo "==> Zapora originu: porty ${PORTS// /, } tylko z ${#RANGES[@]} zakresów Cloudflare."
+echo "==> Origin firewall: ports ${PORTS// /, } only from ${#RANGES[@]} Cloudflare ranges."

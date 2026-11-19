@@ -7,8 +7,8 @@ import Reveal from "@/components/Reveal";
 import StaffDetails from "@/components/StaffDetails";
 import Watermark from "@/components/Watermark";
 
-// Funkcja, nie stała: resolver metadanych Next-a zjada przekazany obiekt,
-// a strona bywa renderowana kilka razy w jednym procesie (gubiła się grafika karty).
+// A function, not a constant: Next's metadata resolver consumes the object passed in,
+// and the page can be rendered several times in one process (the card image got lost).
 export function generateMetadata(): Metadata {
   return pageMetadata({
     title: "Zespół",
@@ -28,10 +28,10 @@ export default async function ZespolPage() {
         Ludzie, którym możesz zaufać
       </h1>
 
-      {/* Stan pusty — ten sam kontrakt, co na Galerii (`galeria/page.tsx`). Bez niego
-          pusta odpowiedź ze Strapi (nieopublikowany wpis albo padnięty CMS, na co
-          `lib/strapi.ts` jest świadomie przygotowane) zostawiała tu sam nagłówek nad
-          pustką — strona wyglądała na zepsutą zamiast na stronę bez treści. */}
+      {/* The empty state — the same contract as on Galeria (`galeria/page.tsx`). Without it
+          an empty response from Strapi (an unpublished entry or a dead CMS, which
+          `lib/strapi.ts` is deliberately prepared for) left just the heading over a void
+          here — the page looked broken instead of like a page without content. */}
       {staff.length === 0 ? (
         <p className="mt-14 max-w-md text-lg leading-8 text-ink-soft">
           Prezentacja zespołu jest w przygotowaniu — zajrzyj tu wkrótce.

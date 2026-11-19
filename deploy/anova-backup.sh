@@ -1,31 +1,30 @@
 #!/bin/bash
 #
-# Nocna kopia zapasowa: cała baza Strapi + wolumen z wgranymi zdjęciami,
-# zaszyfrowane na Dysk Google.
+# Nightly backup: the whole Strapi database + the volume with uploaded photos,
+# encrypted to Google Drive.
 #
-# Ten sam schemat co w fire-academy i climbing (tam działa od miesięcy).
-# Plik żyje w repo i deploy.yml instaluje go na serwerze przy każdym deployu,
-# tak jak nginx.conf i setup-swap.sh — skrypt kopii, który istnieje tylko na
-# serwerze, ginie razem z serwerem. Cron i konfigurację rclone zakłada się
-# ręcznie, raz — patrz notka na końcu pliku i RESTORE.md.
+# The same scheme as in fire-academy and climbing (running there for months).
+# The file lives in the repo and deploy.yml installs it on the server on every deploy,
+# like nginx.conf and setup-swap.sh — a backup script that exists only on the
+# server dies together with the server. Cron and the rclone configuration are set up
+# by hand, once — see the note at the end of this file and RESTORE.md.
 #
-# Trzy zasady, każda wyniesiona z rodzeństwa:
+# Three rules, each carried over from the siblings:
 #
-#   1. NIGDY `rclone sync`, zawsze `copy`. Sync robi z Dysku lustro katalogu
-#      /backups, łącznie z kasowaniem — więc lokalne sprzątanie po 7 dniach
-#      skasowałoby też kopie zdalne, a wszystko, co zniszczy /backups na
-#      serwerze, poszłoby do chmury przy następnym przebiegu. Zdalną historię
-#      przycina osobna, dużo wolniejsza linijka.
-#   2. NIGDY nie publikować niedokończonego zrzutu. Ucięty pg_dump to wciąż
-#      poprawny gzip, więc test kompresji niczego nie dowodzi. Praca idzie do
-#      pliku .part, jest sprawdzana na znacznik końca pg_dump i dopiero wtedy
-#      dostaje prawdziwą nazwę.
-#   3. NIGDY nie liczyć, że ktoś się dowie o awarii. Cron wysyła maila do
-#      roota, a mail roota na tej maszynie nigdzie nie idzie. Dlatego ping do
-#      zewnętrznego monitora (HEALTHCHECK_URL): to on podnosi alarm, gdy przez
-#      dobę nie usłyszy sukcesu — także wtedy, gdy maszyna leży albo cron zniknął.
+#   1. NEVER `rclone sync`, always `copy`. Sync makes Drive a mirror of /backups,
+#      deletions included — so the local cleanup after 7 days would also delete the
+#      remote copies, and anything that destroys /backups on the server would go to
+#      the cloud on the next run. The remote history is pruned by a separate, much
+#      slower line.
+#   2. NEVER publish an unfinished dump. A truncated pg_dump is still valid gzip, so
+#      a compression test proves nothing. Work goes to a .part file, is checked for
+#      pg_dump's end marker, and only then gets its real name.
+#   3. NEVER count on anyone learning about a failure. Cron mails root, and root's
+#      mail on this machine goes nowhere. Hence a ping to an external monitor
+#      (HEALTHCHECK_URL): it raises the alarm when it hears no success for a day —
+#      also when the machine is down or the cron entry has vanished.
 
-# -E, żeby pułapka ERR odpalała też wewnątrz funkcji.
+# -E, so the ERR trap fires inside functions too.
 set -Eeuo pipefail
 
 DATE=$(date +%Y-%m-%d)
@@ -36,40 +35,41 @@ FILES_BACKUP="${FILES_DIR}/${DATE}.tar.gz"
 LOG="/var/log/anova-backup.log"
 REMOTE="gdrive-crypt:"
 
-# Obie wartości zależą od katalogu, w którym stoi projekt na serwerze. Plik env
-# niżej jest wczytywany PO nich, więc po przeprowadzce wystarczy nadpisać je
-# tam (COMPOSE_DIR=..., UPLOADS_VOLUME=...), bez edycji skryptu.
+# Both values depend on the directory the project sits in on the server. The env file
+# below is read AFTER them, so after a move it is enough to override them there
+# (COMPOSE_DIR=..., UPLOADS_VOLUME=...), without editing the script.
 COMPOSE_DIR="/home/ubuntu/anovastudio"
-# PODWÓJNY przedrostek: compose dokleja nazwę katalogu projektu
-# (`anovastudio`) do nazwy z pliku (`anovastudio_uploads_prod`). Pomyłka
-# w tej nazwie nie jest błędem — `docker run -v <nieznana>:/data` po cichu
-# ZAKŁADA pusty wolumen i pakuje nic, a puste archiwum przechodzi każdy test
-# poniżej. Stąd jawne sprawdzenie istnienia wolumenu przed pakowaniem.
+# A DOUBLE prefix: compose prepends the project directory name (`anovastudio`) to the
+# name from the file (`anovastudio_uploads_prod`). A mistake in this name is not an
+# error — `docker run -v <unknown>:/data` silently CREATES an empty volume and packs
+# nothing, and an empty archive passes every test below. Hence the explicit check that
+# the volume exists before packing.
 UPLOADS_VOLUME="anovastudio_anovastudio_uploads_prod"
 
-# Lokalnie krótko: to tylko poczekalnia i dzieli dysk z bazą. Zdalnie dłużej,
-# bo po kopię sięga się wtedy, gdy problem wyszedł późno. 40, nie 90 dni: Dysk
-# (15 GB) dzieli konto z fire-academy i climbing, a przy 90 dniach codziennych
-# archiwów zdjęć całej trójki zabrakłoby na nim miejsca (policzone 09.10.2026).
+# Short locally: it is only a waiting room and shares the disk with the database.
+# Longer remotely, because a backup is reached for when a problem surfaced late. 40,
+# not 90 days: Drive (15 GB) shares the account with fire-academy and climbing, and at
+# 90 days of daily photo archives of all three it would run out of space (counted
+# 09.10.2026).
 LOCAL_RETENTION_DAYS=7
 REMOTE_RETENTION_DAYS=40
 
-# Archiwum zdjęć powstaje tylko, gdy zdjęcia się zmieniły — zmieniają się kilka
-# razy w roku, a każde archiwum to komplet (~35 MB), więc codzienna kopia tego
-# samego zjadała Dysk bez żadnego zysku. Każde archiwum nadal jest PEŁNE:
-# odtworzenie to najnowszy zrzut bazy + najnowsze archiwum zdjęć sprzed niego,
-# bo brak nowszego archiwum znaczy właśnie, że zdjęcia się nie zmieniły.
+# The photo archive is made only when the photos changed — they change a few times a
+# year, and each archive is complete (~35 MB), so a daily copy of the same thing ate
+# Drive for no gain. Each archive is still FULL: a restore is the newest database dump +
+# the newest photo archive before it, because the absence of a newer archive means
+# exactly that the photos did not change.
 #
-# Odciski (ścieżka, rozmiar, data modyfikacji każdego pliku) trzyma plik stanu.
-# Bez zmian archiwum i tak powstaje co FILES_REFRESH_DAYS dni: musi to być mniej
-# niż REMOTE_RETENTION_DAYS, inaczej przycinanie Dysku skasowałoby jedyne
-# archiwum. Brak pliku stanu (nowy serwer) = archiwum od razu.
+# The fingerprints (path, size, modification time of every file) are kept in a state
+# file. Without changes an archive is still made every FILES_REFRESH_DAYS days: that
+# must be less than REMOTE_RETENTION_DAYS, or pruning Drive would delete the only
+# archive. No state file (a new server) = an archive right away.
 FILES_REFRESH_DAYS=30
 FILES_STATE="/var/lib/anova-backup/files-state"
 
-# Poza repo celowo: URL pingu jest sekretem — kto go zna, może zgłosić sukces,
-# którego nie było. Plik na serwerze, tylko dla roota (chmod 600). Brak pliku =
-# kopia robi się normalnie, tylko bez alarmu.
+# Outside the repo on purpose: the ping URL is a secret — whoever knows it can report a
+# success that never happened. A file on the server, root only (chmod 600). No file =
+# the backup runs normally, just without the alarm.
 ENV_FILE="/etc/anova-backup.env"
 HEALTHCHECK_URL=""
 # shellcheck source=/dev/null
@@ -77,12 +77,12 @@ HEALTHCHECK_URL=""
 
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; }
 
-# Monitor, do którego nie da się dobić, nie ma prawa ubić kopii — kopia jest
-# celem, ping tylko raportem o niej.
+# A monitor that cannot be reached has no right to kill the backup — the backup is the
+# goal, the ping is only a report about it.
 ping_healthcheck() {
     [ -n "$HEALTHCHECK_URL" ] || return 0
     curl -fsS -m 10 --retry 3 -o /dev/null "${HEALTHCHECK_URL}${1:-}" \
-        || log "WARN: nie udało się wysłać pingu '${1:-<sukces>}' — sama kopia bez zmian"
+        || log "WARN: could not send the ping '${1:-<success>}' — the backup itself is unaffected"
 }
 
 PINGED_FAIL=0
@@ -95,66 +95,66 @@ fail() {
     exit 1
 }
 
-trap 'fail "nieoczekiwany błąd w linii ${LINENO} (kod $?)"' ERR
-# Cron uruchamia skrypt przez `timeout 1h`, który po czasie wysyła TERM całej
-# grupie procesów. Bez tej pułapki przebieg ubity w połowie wysyłki nie zostawiał
-# w logu nic poza ostatnim „Copy to …” i nie pingował /fail — dokładnie tak
-# wyglądał zawieszony upload z 08.10.2026 (limit Google, patrz RESTORE.md).
-trap 'fail "przerwany sygnałem (np. limit czasu z crona) — ostatni krok w linii wyżej"' TERM INT
+trap 'fail "unexpected error at line ${LINENO} (code $?)"' ERR
+# Cron runs the script through `timeout 1h`, which after the limit sends TERM to the
+# whole process group. Without this trap a run killed halfway through the upload left
+# nothing in the log but the last "Copy to …" and did not ping /fail — exactly what the
+# hung upload of 08.10.2026 looked like (a Google limit, see RESTORE.md).
+trap 'fail "killed by a signal (e.g. the cron time limit) — the last step is on the line above"' TERM INT
 
 mkdir -p "$DB_DIR" "$FILES_DIR" "$(dirname "$FILES_STATE")"
 log "=== Backup start ==="
 
 [ "$FILES_REFRESH_DAYS" -lt "$REMOTE_RETENTION_DAYS" ] \
-    || fail "FILES_REFRESH_DAYS (${FILES_REFRESH_DAYS}) musi być mniejsze niż REMOTE_RETENTION_DAYS (${REMOTE_RETENTION_DAYS}) — inaczej Dysk zostałby bez archiwum zdjęć"
+    || fail "FILES_REFRESH_DAYS (${FILES_REFRESH_DAYS}) must be smaller than REMOTE_RETENTION_DAYS (${REMOTE_RETENTION_DAYS}) — otherwise Drive would be left without a photo archive"
 
-# --- warunki wstępne ---------------------------------------------------------
+# --- preconditions ----------------------------------------------------------
 
-# Sprawdzane NA POCZĄTKU, nie przy wysyłce: bez rclone i zdalnego dysku cała
-# reszta tylko zapycha dysk kopiami, które nigdy nie wyjdą poza serwer.
-command -v rclone >/dev/null 2>&1 || fail "brak rclone na serwerze — patrz RESTORE.md, „Pierwsza konfiguracja”"
+# Checked at the START, not at upload: without rclone and the remote drive everything
+# else only fills the disk with backups that will never leave the server.
+command -v rclone >/dev/null 2>&1 || fail "no rclone on the server — see RESTORE.md, section \"Pierwsza konfiguracja\""
 REMOTES=$(rclone listremotes)
-grep -qxF "$REMOTE" <<<"$REMOTES" || fail "rclone nie zna remote'u ${REMOTE} — patrz RESTORE.md, „Pierwsza konfiguracja”"
+grep -qxF "$REMOTE" <<<"$REMOTES" || fail "rclone does not know the remote ${REMOTE} — see RESTORE.md, section \"Pierwsza konfiguracja\""
 
 if ! docker volume inspect "$UPLOADS_VOLUME" >/dev/null 2>&1; then
-    log "        dostępne: $(docker volume ls --format '{{.Name}}' | grep -i uploads | tr '\n' ' ' || true)"
-    fail "wolumen '${UPLOADS_VOLUME}' nie istnieje — nie pakuję niczego udającego kopię"
+    log "        available: $(docker volume ls --format '{{.Name}}' | grep -i uploads | tr '\n' ' ' || true)"
+    fail "volume '${UPLOADS_VOLUME}' does not exist — not packing anything that pretends to be a backup"
 fi
 
 # --- baza --------------------------------------------------------------------
 
 log "DB dump -> ${DB_BACKUP}.part"
-# Użytkownik i nazwa bazy z env kontenera, nie z tego pliku — jedno źródło
-# prawdy (.env obok compose), zero haseł w repo.
+# The database user and name from the container's env, not from this file — one source
+# of truth (.env next to compose), zero passwords in the repo.
 docker compose -f "${COMPOSE_DIR}/docker-compose.prod.yml" exec -T postgres \
     sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "${DB_BACKUP}.part"
 
-# Znacznik końca pg_dump to jedyny tani dowód, że zrzut doszedł do końca.
-# Okno 20 linii, nie 5: od poprawek z sierpnia 2025 (m.in. 17.6) po znaczniku
-# idzie jeszcze `\unrestrict <token>`, przez co w fire-academy znacznik siedział dokładnie
-# na 5. linii od końca — test przechodził z zerowym zapasem. Ucięty zrzut nie
-# ma znacznika nigdzie, więc szersze okno nic nie kosztuje.
+# pg_dump's end marker is the only cheap proof that the dump reached its end.
+# A window of 20 lines, not 5: since the August 2025 fixes (incl. 17.6) `\unrestrict
+# <token>` follows the marker, so in fire-academy the marker sat exactly on the 5th line
+# from the end — the test passed with zero margin. A truncated dump has no marker
+# anywhere, so the wider window costs nothing.
 #
-# Najpierw do zmiennej, potem grep — tu i wyżej przy listremotes. grep na końcu
-# potoku wychodzi po pierwszym trafieniu (z -q, ale też bez niego, gdy pisze do
-# /dev/null), a jeśli poprzednik jeszcze pisze, dostaje SIGPIPE i przy pipefail
-# cały potok zgłasza błąd: dobry zrzut zostałby uznany za ucięty. Sprawdzone
-# 08.10.2026 — oba warianty z grepem w potoku dały kod 141.
+# Into a variable first, then grep — here and above at listremotes. grep at the end of a
+# pipe exits on the first hit (with -q, but also without it when writing to /dev/null),
+# and if the producer is still writing it gets SIGPIPE, and with pipefail the whole pipe
+# reports an error: a good dump would be judged truncated. Checked 08.10.2026 — both
+# variants with grep in the pipe gave code 141.
 DUMP_TAIL=$(gunzip -c "${DB_BACKUP}.part" | tail -20)
 if ! grep -qF "PostgreSQL database dump complete" <<<"$DUMP_TAIL"; then
     rm -f "${DB_BACKUP}.part"
-    fail "zrzut bazy bez znacznika końca — ucięty, nie publikuję"
+    fail "database dump without the end marker — truncated, not publishing"
 fi
 mv "${DB_BACKUP}.part" "$DB_BACKUP"
 log "DB OK: $(du -sh "$DB_BACKUP" | cut -f1)"
 
-# --- wgrane pliki ------------------------------------------------------------
+# --- uploaded files ------------------------------------------------------------
 
-# Odcisk zawartości wolumenu: ścieżka|rozmiar|data modyfikacji każdego pliku,
-# posortowane i zhaszowane. Dodanie, usunięcie i podmiana zdjęcia go zmieniają.
-# Liczony PRZED pakowaniem: jeśli coś dojdzie w międzyczasie, trafi do archiwum,
-# a jutrzejszy odcisk będzie inny — czyli najwyżej jedno archiwum za dużo,
-# nigdy za mało.
+# A fingerprint of the volume's contents: path|size|modification time of every file,
+# sorted and hashed. Adding, deleting or replacing a photo changes it.
+# Computed BEFORE packing: if something arrives in the meantime, it goes into the
+# archive and tomorrow's fingerprint differs — so at most one archive too many, never
+# one too few.
 FILES_FP=$(docker run --rm -v "${UPLOADS_VOLUME}:/data:ro" alpine \
     sh -c 'cd /data && find . -type f -exec stat -c "%n|%s|%Y" {} + | sort' \
     | sha256sum | cut -d' ' -f1)
@@ -164,9 +164,9 @@ PREV_AT=0
 if [ -r "$FILES_STATE" ]; then
     read -r PREV_FP PREV_AT < "$FILES_STATE" || true
 fi
-# Uszkodzony stan (np. zapis ucięty przy pełnym dysku) nie może wywracać kopii
-# co noc: śmieci zamiast liczby = traktuj jak brak stanu, czyli zrób archiwum —
-# a zapis po nim naprawi plik.
+# A corrupt state (e.g. a write cut off on a full disk) must not overturn the backup
+# every night: junk instead of a number = treat it as no state, i.e. make an archive —
+# and the write after it repairs the file.
 case "$PREV_AT" in
     ''|*[!0-9]*) PREV_FP=""; PREV_AT=0 ;;
 esac
@@ -179,69 +179,68 @@ if [ "$FILES_FP" != "$PREV_FP" ] || [ "$FILES_AGE_DAYS" -ge "$FILES_REFRESH_DAYS
         -v "${FILES_DIR}:/backup" \
         alpine tar czf "/backup/${DATE}.tar.gz.part" -C /data .
 
-    # Odczyt całego archiwum to różnica między „tar skończył z kodem 0”
-    # a „archiwum da się otworzyć” — łapie i uszkodzony strumień, i ucięcie
-    # przy zapchanym dysku.
+    # Reading the whole archive is the difference between "tar exited with 0" and "the
+    # archive can be opened" — it catches both a damaged stream and truncation on a full
+    # disk.
     if ! tar tzf "${FILES_BACKUP}.part" >/dev/null 2>&1; then
         rm -f "${FILES_BACKUP}.part"
-        fail "archiwum plików nie daje się odczytać — nie publikuję"
+        fail "the files archive cannot be read — not publishing"
     fi
     mv "${FILES_BACKUP}.part" "$FILES_BACKUP"
-    # Stan zapisywany dopiero po opublikowaniu archiwum: padnięty przebieg
-    # zostawia stary odcisk, więc jutro archiwum powstanie jeszcze raz.
+    # The state is written only after the archive is published: a failed run leaves the
+    # old fingerprint, so tomorrow the archive is made again.
     printf '%s %s\n' "$FILES_FP" "$(date +%s)" > "$FILES_STATE"
     log "Files OK: $(du -sh "$FILES_BACKUP" | cut -f1)"
 else
-    log "Files: zdjęcia bez zmian od $(date -d "@${PREV_AT}" +%F 2>/dev/null || echo "${FILES_AGE_DAYS} dni") — najnowsze archiwum nadal aktualne, nowego nie robię"
+    log "Files: photos unchanged since $(date -d "@${PREV_AT}" +%F 2>/dev/null || echo "${FILES_AGE_DAYS} days") — the newest archive is still current, not making a new one"
 fi
 
-# --- poza serwer -------------------------------------------------------------
+# --- off the server -------------------------------------------------------------
 
-# `copy`, nigdy `sync` — zasada 1 na górze. .part nie mają prawa wyjść
-# z serwera: to pliki, które nie przeszły weryfikacji.
+# `copy`, never `sync` — rule 1 at the top. .part files have no right to leave the
+# server: they are files that failed verification.
 #
-# Najbardziej prawdopodobna awaria całego skryptu: token Dysku jest dzielony
-# z fire-academy i climbing, więc jego unieważnienie gdziekolwiek zatrzymuje
-# wysyłkę tutaj. Stąd jawny komunikat zamiast „błąd w linii N”. Kopie z dziś
-# są już opublikowane lokalnie, a lokalne sprzątanie niżej się nie wykona —
-# nic nie przepada, a `copy` przy następnym udanym przebiegu dośle wszystko,
-# czego na Dysku brakuje.
+# The most likely failure of the whole script: the Drive token is shared with
+# fire-academy and climbing, so revoking it anywhere stops the upload here. Hence an
+# explicit message instead of "error at line N". Today's backups are already published
+# locally, and the local cleanup below will not run — nothing is lost, and `copy` on
+# the next successful run sends everything Drive is missing.
 log "Copy to ${REMOTE}"
 rclone copy /backups "$REMOTE" --exclude "*.part" --log-file="$LOG" --log-level NOTICE \
-    || fail "wysyłka na Drive (${REMOTE}) nie powiodła się — kopie zostały lokalnie w /backups; szczegóły rclone wyżej w logu"
+    || fail "upload to Drive (${REMOTE}) failed — the backups stayed locally in /backups; rclone details above in the log"
 
-# Osobno i wolno. --min-age to filtr, więc nic świeższego nie może się złapać.
-# --drive-use-trash=false: kasowanie na stałe, z pominięciem kosza Dysku. Kosz
-# wlicza się do 15 GB konta, a Google opróżnia go dopiero po 30 dniach — każda
-# kopia zajmowała więc miejsce 70 dni zamiast 40. W najgorszym przypadku
-# (codzienne archiwa zdjęć wszystkich trzech projektów) to 13,2 GB z 15
-# (policzone 12.10.2026). Przeterminowanej kopii nie ma po co odzyskiwać.
+# Separately and slowly. --min-age is a filter, so nothing fresher can be caught.
+# --drive-use-trash=false: delete permanently, skipping Drive's bin. The bin counts
+# toward the account's 15 GB, and Google empties it only after 30 days — so each backup
+# took space for 70 days instead of 40. In the worst case (daily photo archives of all
+# three projects) that is 13.2 GB of 15 (counted 12.10.2026). There is no point
+# recovering an expired backup.
 log "Prune remote older than ${REMOTE_RETENTION_DAYS}d"
 rclone delete "$REMOTE" --min-age "${REMOTE_RETENTION_DAYS}d" --drive-use-trash=false --log-file="$LOG" --log-level NOTICE \
-    || fail "sprzątanie starych kopii na Drive nie powiodło się — dzisiejsza kopia jest wysłana i lokalnie"
+    || fail "pruning old backups on Drive failed — today's backup is uploaded and local"
 
-# --- lokalne sprzątanie ------------------------------------------------------
+# --- local cleanup ----------------------------------------------------------
 
 find "$DB_DIR" -name "*.sql.gz" -mtime "+${LOCAL_RETENTION_DAYS}" -delete
-# Najnowsze archiwum zdjęć zostaje zawsze, nawet starsze niż 7 dni: przy
-# zdjęciach bez zmian to ono jest aktualną kopią, a odtworzenie z samego
-# serwera (bez Dysku) ma dalej mieć z czego wrócić. Nazwy to daty, więc
-# sortowanie po nazwie = po wieku.
+# The newest photo archive always stays, even if older than 7 days: with unchanged
+# photos it is the current copy, and a restore from the server alone (without Drive)
+# must still have something to come back from. The names are dates, so sorting by name
+# = by age.
 NEWEST_FILES=$(find "$FILES_DIR" -maxdepth 1 -name "*.tar.gz" | sort | tail -1)
 find "$FILES_DIR" -name "*.tar.gz" -mtime "+${LOCAL_RETENTION_DAYS}" ! -path "${NEWEST_FILES:-/nic}" -delete
-# Resztki po przebiegu, który padł w połowie.
+# Leftovers of a run that failed halfway.
 find "$DB_DIR" "$FILES_DIR" -name "*.part" -mtime +1 -delete
 
 log "=== Backup done ==="
 ping_healthcheck ""
 
-# --- instalacja na serwerze --------------------------------------------------
+# --- installation on the server ----------------------------------------------
 #
-# Skrypt i rotację logu instaluje deploy.yml. Ręcznie, raz, zostaje:
-#   1. rclone + remote `gdrive-crypt:` — RESTORE.md, „Pierwsza konfiguracja”
-#   2. pierwszy przebieg na próbę:  sudo /usr/local/bin/anova-backup.sh
-#   3. cron (dopiero gdy krok 2 przeszedł; obraz Oracle nie ma crona — najpierw
+# deploy.yml installs the script and the log rotation. What stays by hand, once:
+#   1. rclone + the `gdrive-crypt:` remote — RESTORE.md, section "Pierwsza konfiguracja"
+#   2. a first trial run:  sudo /usr/local/bin/anova-backup.sh
+#   3. cron (only once step 2 has passed; the Oracle image has no cron — first
 #      `sudo apt-get install -y cron`):
 #        (sudo crontab -l 2>/dev/null | grep -v anova-backup; echo "0 3 * * * timeout 1h /usr/local/bin/anova-backup.sh") | sudo crontab -
-#   4. alarm (zalecane): check na healthchecks.io z dobowym okresem, URL do
-#        /etc/anova-backup.env jako HEALTHCHECK_URL=..., chmod 600.
+#   4. alarm (recommended): a check on healthchecks.io with a daily period, the URL into
+#        /etc/anova-backup.env as HEALTHCHECK_URL=..., chmod 600.

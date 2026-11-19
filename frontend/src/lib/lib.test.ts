@@ -1,8 +1,8 @@
 /**
- * Testy czystych funkcji pomocniczych — tych, które przetwarzają dane wpisywane
- * ręcznie (ceny w kodzie, kursy w CMS-ie) i przez to mogą dostać na wejściu coś
- * innego, niż zakładał autor. Reszta serwisu to rendering, który sprawdza smoke
- * test w deployu; tutaj chodzi o logikę, którą da się złamać jednym przecinkiem.
+ * Tests of the pure helpers — the ones that process data typed in by hand (prices in the
+ * code, courses in the CMS) and so may get input other than the author assumed. The rest
+ * of the site is rendering, checked by the smoke test in the deploy; this is about logic
+ * that a single comma can break.
  *
  *     npm test
  */
@@ -16,20 +16,20 @@ import { OFFER_SERVICES } from "@/lib/offer";
 test("priceValue wyciąga liczbę z ceny zapisanej po ludzku", () => {
   assert.equal(priceValue("200 zł"), "200");
   assert.equal(priceValue("50 zł"), "50");
-  // Spacja jako separator tysięcy — bez usuwania spacji wyszłoby samo "1"
+  // A space as the thousands separator — without removing spaces the result would be just "1"
   assert.equal(priceValue("1 200 zł"), "1200");
 });
 
 test("priceValue zwraca null, gdy w cenie nie ma liczby", () => {
-  // Takie wpisy są realne („do ustalenia", „w pakiecie") i NIE mogą trafić
-  // do danych dla Google jako cena — schema.ts pomija wtedy pole `price`.
+  // Such entries are real ("do ustalenia", "w pakiecie") and must NOT reach Google's data
+  // as a price — schema.ts then leaves out the `price` field.
   assert.equal(priceValue("do ustalenia"), null);
   assert.equal(priceValue(""), null);
 });
 
 test("każda usługa w cenniku ma cenę czytelną dla wyszukiwarek", () => {
-  // Strażnik na przyszłe edycje lib/offer.ts: cena wpisana bez cyfry wypadłaby
-  // po cichu z danych strukturalnych i nikt by tego nie zauważył.
+  // A guard for future edits of lib/offer.ts: a price typed without a digit would
+  // silently drop out of the structured data and nobody would notice.
   for (const service of OFFER_SERVICES) {
     assert.ok(
       priceValue(service.price),
@@ -46,8 +46,8 @@ test("parseCourses rozbija tekst z CMS-a na pozycje listy", () => {
 });
 
 test("parseCourses czyści puste linie i spacje z wklejanego tekstu", () => {
-  // Tekst wklejany z Worda regularnie niesie puste linie i spacje na końcach —
-  // bez czyszczenia lista dostawała puste kropki.
+  // Text pasted from Word regularly carries empty lines and trailing spaces — without
+  // cleanup the list got empty bullets.
   assert.deepEqual(parseCourses("  Kurs A  \n\n\n   \n Kurs B\n"), [
     "Kurs A",
     "Kurs B",
@@ -55,7 +55,7 @@ test("parseCourses czyści puste linie i spacje z wklejanego tekstu", () => {
 });
 
 test("parseCourses radzi sobie z pustym polem", () => {
-  // Pole `courses` jest opcjonalne w Strapi, więc null i undefined są normą.
+  // The `courses` field is optional in Strapi, so null and undefined are normal.
   assert.deepEqual(parseCourses(null), []);
   assert.deepEqual(parseCourses(undefined), []);
   assert.deepEqual(parseCourses("   "), []);

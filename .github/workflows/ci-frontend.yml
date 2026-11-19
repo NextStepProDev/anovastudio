@@ -38,23 +38,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          # Musi zgadzać się z `FROM node:<wersja>-alpine` w frontend/Dockerfile.
-          # Dependabot podbija tylko tam (ekosystem docker czyta Dockerfile'e),
-          # tej liczby nie rusza nikt — po bumpie 24 → 26 w #31 CI został na
-          # 24 i przez chwilę testował kod na innej wersji, niż obsługuje
-          # produkcję. Przy następnym majorze Node zmienić OBA miejsca naraz.
+          # Must match `FROM node:<version>-alpine` in frontend/Dockerfile.
+          # Dependabot bumps only that one (the docker ecosystem reads Dockerfiles)
+          # and nobody touches this number — after the 24 → 26 bump in #31 CI stayed
+          # on 24 and for a while tested the code on a different version than
+          # production runs. On the next Node major change BOTH places at once.
           node-version: 26
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      # BLOKUJE. `--omit=dev` jest tu istotą rzeczy, a nie zawężeniem: obraz
-      # produkcyjny to `output: standalone`, więc trafiają do niego wyłącznie
-      # zależności produkcyjne. Bez tej flagi audyt zgłaszał podatności w samym
-      # eslincie i jego drzewie (js-yaml, brace-expansion) — rzeczy, które nigdy
-      # nie opuszczają maszyny CI — więc bramka stała na `continue-on-error`
-      # i nie pilnowała niczego. Zawężona do tego, co faktycznie leci na serwer,
-      # świeci na zero i może wreszcie wywalać build.
-      - name: npm audit (produkcyjne, high+)
+      # BLOCKING. `--omit=dev` is the point here, not a narrowing: the production
+      # image is `output: standalone`, so only production dependencies reach it.
+      # Without the flag the audit reported advisories in eslint itself and its
+      # tree (js-yaml, brace-expansion) — things that never leave the CI machine —
+      # so the gate sat on `continue-on-error` and guarded nothing. Narrowed to
+      # what actually goes to the server, it shows zero and can fail the build.
+      - name: npm audit (production, high+)
         run: npm audit --omit=dev --audit-level=high
       - run: npm run lint
       - run: npx tsc --noEmit
@@ -99,15 +98,16 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      # Skan CVE w warstwie systemowej obrazu (czego npm audit nie widzi).
-      # Informacyjnie na razie (exit-code 0 = nie blokuje deployu). ignore-unfixed
-      # ucina szum z podatności bez łatki; zostają te naprawialne bumpem bazy.
-      # Gdy wyniki będą czyste, ustaw exit-code na 1, by high/critical wywalały build.
+      # CVE scan of the image's system layer (what npm audit does not see).
+      # Informational for now (exit-code 0 = does not block the deploy). ignore-unfixed
+      # cuts the noise of vulnerabilities without a patch; what stays can be fixed by
+      # bumping the base image. Once the results are clean, set exit-code to 1 so
+      # high/critical fail the build.
       - name: Trivy image scan (high+)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          # Nazwa obrazu musi być lowercase (owner NextStepProDev ma wielkie litery,
-          # a OCI reference wymaga małych — metadata-action lowercase'uje sam przy pushu).
+          # The image name must be lowercase (the owner NextStepProDev has capitals, and an
+          # OCI reference requires lowercase — metadata-action lowercases on push by itself).
           image-ref: ghcr.io/nextstepprodev/anovastudio-frontend:${{ steps.version.outputs.version }}
           format: table
           severity: HIGH,CRITICAL

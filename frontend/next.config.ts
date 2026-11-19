@@ -1,18 +1,18 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-// Zdjęcia i logotypy z public/ Next domyślnie oddaje z `Cache-Control: max-age=0`,
-// więc przeglądarka przy każdym wejściu pytała serwer o każdy plik hero. Nazwy tych
-// plików nie mają w sobie hasha, więc NIE dajemy `immutable` na rok — tydzień plus
-// serwowanie starej wersji w tle na czas odświeżenia. UWAGA: przy podmianie zdjęcia
-// na inne warto zmienić nazwę pliku, inaczej stali goście zobaczą stare do tygodnia.
+// Next serves photos and logos from public/ with `Cache-Control: max-age=0` by default,
+// so the browser asked the server for every hero file on every visit. These file names
+// carry no hash, so we do NOT give a year of `immutable` — a week plus serving the stale
+// version in the background while revalidating. NOTE: when replacing a photo with another,
+// change the file name, or returning visitors will see the old one for up to a week.
 const STATIC_MEDIA_CACHE =
   "public, max-age=604800, stale-while-revalidate=86400";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  // Nie ogłaszaj, na czym stoi serwis — spójnie z usuniętym `strapi::poweredBy`
-  // po stronie backendu.
+  // Do not announce what the site runs on — consistent with the removed `strapi::poweredBy`
+  // on the backend.
   poweredByHeader: false,
   async headers() {
     return [
@@ -33,10 +33,10 @@ const nextConfig: NextConfig = {
     root: path.join(__dirname),
   },
   images: {
-    // Zdjęcia z Media Library mają w nazwie hash nadany przez Strapi, więc dana
-    // treść pod danym adresem nigdy się nie zmienia — domyślne 4 godziny cache
-    // w przeglądarce były tu zaniżone. 30 dni ucina powtarzane zapytania i, co
-    // ważniejsze na serwerze z jednym rdzeniem, oszczędza przetwarzanie sharpem.
+    // Media Library photos have a hash in the name given by Strapi, so the content under
+    // an address never changes — the default 4 hours of browser cache were too low here.
+    // 30 days cuts repeated requests and, more importantly on a single-core server, saves
+    // processing with sharp.
     minimumCacheTTL: 60 * 60 * 24 * 30,
     // The optimizer blocks private-IP upstreams by default (SSRF protection).
     // Dev: Strapi on localhost. Docker: Strapi is only reachable inside the

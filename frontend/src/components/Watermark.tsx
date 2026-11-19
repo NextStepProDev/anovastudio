@@ -1,20 +1,20 @@
 /**
- * Dekoracyjny znak wodny — sam mark ANOVA (trójkąt „A" z sylwetką) WYTŁOCZONY
- * w powierzchni sekcji. Wrażenie 3D daje wyłącznie światłocień: jasny rant od
- * góry-lewej + ciepły cień od dołu-prawej. Jak tłoczenie w papierze / wytłoczenie
- * w tynku — spójne z hero Oferty. „Wypukłe" (raised), OSTRE krawędzie.
+ * A decorative watermark — the ANOVA mark alone (the "A" triangle with a figure) EMBOSSED
+ * in the section's surface. The 3D impression comes from light and shade alone: a light
+ * rim from the top left + a warm shadow from the bottom right. Like embossing in paper /
+ * relief in plaster — consistent with the Oferta hero. "Raised", with SHARP edges.
  *
- * Kształt wypełniany jest kolorem powierzchni (przez `currentColor`), aby zlał się
- * z tłem — ostra krawędź kształtu na wierzchu daje wyrazistość, a rozmyty rant
- * dokoła buduje relief. Ustaw `surface` na kolor pasa sekcji: "paper" (#f5f0e8,
- * domyślnie) lub "paperWarm" (#e8dfd2).
+ * The shape is filled with the surface colour (through `currentColor`) so it blends with
+ * the background — the sharp edge of the shape on top gives definition, and the blurred
+ * rim around it builds the relief. Set `surface` to the section band's colour: "paper"
+ * (#f5f0e8, default) or "paperWarm" (#e8dfd2).
  *
- * Efekt realizuje filtr SVG z offsetami w jednostkach viewBox, więc rant skaluje się
- * proporcjonalnie do wielkości znaku (jednakowy charakter na każdej stronie).
+ * The effect is an SVG filter with offsets in viewBox units, so the rim scales in
+ * proportion to the mark's size (the same character on every page).
  *
- * Czysta ozdoba: aria-hidden, pointer-events-none, `-z-10`, sam się przycina
- * (własny overflow-hidden) — sekcja-rodzic potrzebuje tylko `relative isolate`.
- * Pozycję i wysokość podaje się przez `className`, np.
+ * Pure decoration: aria-hidden, pointer-events-none, `-z-10`, crops itself (its own
+ * overflow-hidden) — the parent section only needs `relative isolate`. Position and
+ * height are given through `className`, e.g.
  * `right-[-14%] top-1/2 h-[150%] -translate-y-1/2`.
  */
 export default function Watermark({
@@ -24,7 +24,7 @@ export default function Watermark({
 }: {
   className?: string;
   surface?: "paper" | "paperWarm";
-  /** unikalny id filtra — nadpisz tylko gdy dwa znaki lądują w jednym dokumencie */
+  /** a unique filter id — override only when two marks land in one document */
   id?: string;
 }) {
   const surfaceClass = surface === "paperWarm" ? "text-[#e8dfd2]" : "text-paper";
@@ -35,8 +35,8 @@ export default function Watermark({
       className="pointer-events-none absolute inset-0 -z-10 select-none overflow-hidden"
     >
       <span className={`absolute aspect-[186/203] ${surfaceClass} ${className}`}>
-        {/* viewBox = bbox marku + ~8j paddingu z każdej strony (żeby cień/rant nie
-            były przycięte przez krawędź viewportu SVG). */}
+        {/* viewBox = the mark's bbox + ~8 units of padding on each side (so the shadow/rim
+            are not clipped by the edge of the SVG viewport). */}
         <svg
           viewBox="184.89 53.13 186.14 203.27"
           preserveAspectRatio="xMidYMid meet"
@@ -52,15 +52,15 @@ export default function Watermark({
               colorInterpolationFilters="sRGB"
             >
               <feGaussianBlur in="SourceAlpha" stdDeviation="2.8" result="b" />
-              {/* jasny rant od góry-lewej */}
+              {/* a light rim from the top left */}
               <feOffset in="b" dx="-2.6" dy="-2.6" result="hl" />
-              {/* cień od dołu-prawej */}
+              {/* a shadow from the bottom right */}
               <feOffset in="b" dx="2.6" dy="2.6" result="sh" />
               <feFlood floodColor="#ffffff" floodOpacity="0.6" />
               <feComposite in2="hl" operator="in" result="hlc" />
               <feFlood floodColor="#3a2f22" floodOpacity="0.32" />
               <feComposite in2="sh" operator="in" result="shc" />
-              {/* SourceGraphic (ostry kształt w kolorze tła) na wierzchu = wyrazistość */}
+              {/* SourceGraphic (the sharp shape in the background colour) on top = definition */}
               <feMerge>
                 <feMergeNode in="shc" />
                 <feMergeNode in="hlc" />

@@ -14,6 +14,13 @@ on:
 permissions:
   contents: read
 
+# One Deploy at a time (audit, 2026-11-19). Two runs started together would race on the same
+# server: one prunes images the other is about to start, and both rewrite compose and nginx.
+# Not cancelled — a deploy stopped halfway leaves the server between two versions.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -102,20 +109,20 @@ jobs:
             # Ensure swap exists before starting memory-hungry containers (idempotent).
             echo "$SWAP_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/setup-swap.sh
             sudo -n bash ${{ secrets.DEPLOY_PATH }}/setup-swap.sh || echo "WARN: swap setup skipped/failed (check passwordless sudo)"
-            # Skrypt nocnej kopii jedzie z repo jak nginx.conf — skrypt, który żyje
-            # tylko na serwerze, ginie razem z nim. Cron i rclone zakłada się ręcznie,
-            # raz (deploy/RESTORE.md); tu tylko podmiana pliku, więc deploy przed tą
-            # konfiguracją niczego nie psuje. WARN zamiast błędu: kopia nie ma prawa
-            # zablokować wdrożenia strony.
+            # The nightly backup script ships from the repo like nginx.conf — a script
+            # that lives only on the server dies with it. Cron and rclone are set up by
+            # hand, once (deploy/RESTORE.md); here the file is only replaced, so a deploy
+            # before that setup breaks nothing. WARN instead of an error: the backup has
+            # no right to block a site deployment.
             echo "$BACKUP_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/anova-backup.sh
             sudo -n install -m 0755 ${{ secrets.DEPLOY_PATH }}/anova-backup.sh /usr/local/bin/anova-backup.sh \
               || echo "WARN: could not install the backup script (check passwordless sudo)"
             echo "$LOGROTATE_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/logrotate-anova-backup
             sudo -n install -m 0644 ${{ secrets.DEPLOY_PATH }}/logrotate-anova-backup /etc/logrotate.d/anova-backup \
               || echo "WARN: could not install log rotation for the backup log"
-            # Porty 80/443 tylko z Cloudflare (deploy/origin-firewall.sh). Zakresy
-            # z nginx.conf zapisanego wyżej. WARN zamiast błędu: przy porażce
-            # zostają poprzednie reguły (albo żadne) i strona działa dalej.
+            # Ports 80/443 from Cloudflare only (deploy/origin-firewall.sh). The ranges
+            # come from the nginx.conf written above. WARN instead of an error: on failure
+            # the previous rules (or none) stay and the site keeps working.
             mkdir -p ${{ secrets.DEPLOY_PATH }}/firewall
             echo "$FW_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/firewall/origin-firewall.sh
             echo "$FWUNIT_B64" | base64 -d > ${{ secrets.DEPLOY_PATH }}/firewall/origin-firewall.service
@@ -132,25 +139,24 @@ jobs:
             else
               echo "VERSION=${VERSION}" >> .env
             fi
-            # Sprzątanie MUSI iść PRZED pullem. Nowe obrazy (~3,4 GB) nie mieszczą
-            # się na 45-gigabajtowym dysku obok poprzednich, a pull przerwany na
-            # braku miejsca kończy deploy na czerwono — dokładnie tak padło 1.8.2,
-            # przy dysku zapchanym w 99% przez 58 nieużywanych obrazów.
-            # Nie ma tu `docker image prune -af --filter until=...`: na tej maszynie
-            # (containerd image store) filtr sprawiał, że otagowane obrazy
-            # przeżywały każde sprzątanie i uzbierały się wszystkie wersje od
-            # początku projektu. Kasujemy więc jawnie, po tagach: zostają obrazy
-            # trzymane przez kontenery i KEEP najnowszych z każdego repozytorium —
-            # tyle zapasu, żeby ręczny rollback nie wymagał pobierania z GHCR.
-            # Liczymy RÓŻNE obrazy (po ID), nie wiersze z tagiem: po deployu
-            # z tagiem `main` albo `sha-…` jeden obraz ma dwa tagi, zajmował
-            # oba miejsca i wersja do rollbacku szła do kosza. Wiersze `<none>`
-            # odpadają przed liczeniem (dziś łapie je też `dangling=false`, ale
-            # reguła nie ma od tego filtra zależeć). Kasujemy wszystkie tagi
-            # trzeciego i starszych obrazów. Obrazy w użyciu chronimy po ID
-            # (12 znaków, jak w `docker images`), nie po nazwie — kontener
-            # uruchomiony z innego tagu tego samego obrazu też się liczy.
-            # `|| true` — sprzątanie nie ma prawa ubić deployu.
+            # Cleanup MUST come BEFORE the pull. The new images (~3.4 GB) do not fit on
+            # the 45 GB disk next to the previous ones, and a pull aborted for lack of
+            # space ends the deploy in red — that is exactly how 1.8.2 failed, with the
+            # disk 99% full of 58 unused images.
+            # There is no `docker image prune -af --filter until=...` here: on this
+            # machine (containerd image store) the filter let tagged images survive every
+            # cleanup, and every version since the project's start piled up. So we delete
+            # explicitly, by tag: what stays is images held by containers and the KEEP
+            # newest of each repository — enough slack that a manual rollback needs no
+            # download from GHCR.
+            # We count DISTINCT images (by ID), not tag rows: after a deploy with the
+            # `main` or `sha-…` tag one image carries two tags, took both places and the
+            # rollback version went to the bin. `<none>` rows drop out before ranking
+            # (`dangling=false` catches them too today, but the rule must not depend on
+            # that filter). All tags of the third and older images are deleted. Images in
+            # use are protected by ID (12 characters, as in `docker images`), not by name —
+            # a container started from another tag of the same image counts too.
+            # `|| true` — cleanup has no right to kill the deploy.
             KEEP=2
             IN_USE=$(docker ps -aq | xargs -r docker inspect --format '{{.Image}}' \
               | sed 's/^sha256://' | cut -c1-12 | tr '\n' ' ' || true)
@@ -165,11 +171,11 @@ jobs:
                     !($1 in rank) { rank[$1] = ++k }
                     rank[$1] > keep && !($1 in inuse) { print $2 }' \
                 | while read -r IMG; do
-                    echo "cleanup: usuwam $IMG"
+                    echo "cleanup: removing $IMG"
                     docker rmi "$IMG" || true
                   done || true
             done
-            # Warstwy osierocone po usuniętych tagach (ten wariant, bez filtra, działa).
+            # Layers orphaned by the removed tags (this variant, without a filter, works).
             docker image prune -f || true
             df -h / | tail -1
             docker compose -f docker-compose.prod.yml pull
@@ -186,10 +192,10 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            # Healthy to za mało: poprzednia wersja też jest healthy, więc deploy,
-            # w którym compose nie podmienił kontenera, przechodził tę kontrolę.
-            # Oba kontenery muszą chodzić na właśnie wdrażanym tagu (wersja jest
-            # sprawdzona wzorcem w "Resolve deploy version", można ją tu wkleić).
+            # Healthy is not enough: the previous version is healthy too, so a deploy in
+            # which compose did not replace the container passed this check. Both
+            # containers must run the tag being deployed (the version is checked against
+            # the pattern in "Resolve deploy version", so it is safe to paste here).
             VERSION="${{ steps.version.outputs.version }}"
             for c in anovastudio-strapi-prod anovastudio-frontend-prod; do
               IMAGE=$(docker inspect --format '{{.Config.Image}}' "$c" 2>/dev/null || echo "missing")

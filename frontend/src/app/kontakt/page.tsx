@@ -4,8 +4,8 @@ import { pageMetadata } from "@/lib/seo";
 import Reveal from "@/components/Reveal";
 import Watermark from "@/components/Watermark";
 
-// Funkcja, nie stała: resolver metadanych Next-a zjada przekazany obiekt,
-// a strona bywa renderowana kilka razy w jednym procesie (gubiła się grafika karty).
+// A function, not a constant: Next's metadata resolver consumes the object passed in,
+// and the page can be rendered several times in one process (the card image got lost).
 export function generateMetadata(): Metadata {
   return pageMetadata({
     title: "Kontakt",
@@ -26,8 +26,8 @@ export default function KontaktPage() {
       </h1>
 
       <div className="mt-14 grid flex-1 gap-12 md:grid-cols-2">
-        {/* justify-center: dane kontaktowe wiszą w pionie na środku wysokości mapy,
-            żeby rozciągnięta mapa nie "wystawała" pod krótszą kolumną tekstu. */}
+        {/* justify-center: the contact details hang vertically in the middle of the map's
+            height, so the stretched map does not "stick out" under the shorter text column. */}
         <Reveal className="flex flex-col justify-center">
           <dl className="space-y-8">
             <div>
@@ -123,15 +123,17 @@ export default function KontaktPage() {
         </Reveal>
 
         <Reveal delay={0.15} className="flex flex-col">
-          {/* Wnętrza osadzonej mapy Google nie da się ostylować (obce origin), ale filtr
-              CSS działa na całym elemencie. Wartości dobrane tak, żeby domyślny „ląd"
-              Google (#f5f3f0) wypadł dokładnie w kolorze --color-paper: zbicie jasności
-              zdejmuje biel, sepia dokłada ciepło, a odsycenie tonuje krzykliwy błękit
-              wody i zieleń parków. Filtr trzyma stale — także pod kursorem i przy
-              przesuwaniu mapy — żeby kolor sekcji nie skakał w trakcie korzystania.
-              Celowo jedna właściwość [filter:...], a nie utilities brightness/sepia/saturate
-              — te Tailwind składa w stałej kolejności (jasność, odsycenie, sepia), a filtry
-              nie są przemienne: ląd wychodzi wtedy #f9f0e0 zamiast równo w paper. */}
+          {/* The inside of the embedded Google map cannot be styled (foreign origin), but a
+              CSS filter works on the whole element. The values are chosen so Google's
+              default "land" (#f5f3f0) comes out exactly in --color-paper: dropping the
+              brightness takes away the white, sepia adds warmth, and desaturation tones
+              down the loud blue of water and the green of parks. The filter stays on
+              permanently — also under the cursor and while panning — so the section's
+              colour does not jump during use.
+              Deliberately one [filter:...] property, not the brightness/sepia/saturate
+              utilities — Tailwind composes those in a fixed order (brightness, saturate,
+              sepia), and filters do not commute: the land then comes out #f9f0e0 instead
+              of exactly paper. */}
           <div className="relative aspect-[4/3] overflow-hidden bg-paper-warm md:aspect-auto md:flex-1">
             <iframe
               src={CONTACT.mapsEmbedUrl}

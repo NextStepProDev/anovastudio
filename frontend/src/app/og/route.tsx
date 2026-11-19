@@ -4,16 +4,16 @@ import { join } from "node:path";
 import { CONTACT } from "@/lib/contact";
 import { OG_IMAGE_SIZE } from "@/lib/seo";
 
-// Obrazek karty pokazywany przy udostępnianiu linku (Facebook, Messenger,
-// WhatsApp, X) — jeden dla całego serwisu, adres i telefon brane z lib/contact.
-// Bez własnego fontu: typografia marki siedzi w logu (krzywe), a dwie linijki
-// podpisu jadą domyślnym krojem generatora.
+// The card image shown when a link is shared (Facebook, Messenger, WhatsApp, X) — one
+// for the whole site, address and phone taken from lib/contact. No custom font: the
+// brand typography lives in the logo (curves), and the two lines of caption use the
+// generator's default face.
 //
-// Celowo zwykła trasa `/og`, a nie konwencja pliku `opengraph-image.tsx`:
-// przy tamtej, na podstronach z własnym `openGraph` (a takie mamy — każda ma
-// swój tytuł i opis karty), Next gubił znaczniki og:image w gotowym HTML-u
-// części stron. Zwykły URL podawany jawnie przez `ogImage()` jest przewidywalny.
-// force-static = obrazek powstaje raz, przy buildzie.
+// Deliberately a plain `/og` route, not the `opengraph-image.tsx` file convention: with
+// that one, on subpages with their own `openGraph` (and we have those — each has its own
+// card title and description), Next lost the og:image tags in the finished HTML of some
+// pages. A plain URL given explicitly through `ogImage()` is predictable.
+// force-static = the image is made once, at build time.
 export const dynamic = "force-static";
 
 export async function GET() {
@@ -32,18 +32,18 @@ export async function GET() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          // Krem (--color-paper) z ciepłą poświatą w prawym górnym rogu —
-          // ten sam gest światła, co na stronie.
+          // Cream (--color-paper) with a warm glow in the top right corner —
+          // the same gesture of light as on the site.
           backgroundColor: "#f5f0e8",
           backgroundImage:
             "radial-gradient(circle at 78% 18%, rgba(233,199,149,0.55), rgba(245,240,232,0) 55%)",
         }}
       >
-        {/* next/image tu nie działa — generator (satori) rozumie tylko <img>. */}
+        {/* next/image does not work here — the generator (satori) understands only <img>. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={logoSrc} width={353} height={300} alt="" />
-        {/* Logo niesie już „fizjoterapia / masaż / trening", więc podpis dokłada
-            to, czego w nim nie ma: profil gabinetu, adres i telefon. */}
+        {/* The logo already carries "fizjoterapia / masaż / trening", so the caption adds
+            what it lacks: the clinic's profile, address and phone. */}
         <div style={{ marginTop: 40, fontSize: 32, color: "#5c5246" }}>
           Rehabilitacja ortopedyczna i sportowa
         </div>

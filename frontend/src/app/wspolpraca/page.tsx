@@ -6,8 +6,8 @@ import { PARTNERS } from "@/lib/partners";
 import Reveal from "@/components/Reveal";
 import Watermark from "@/components/Watermark";
 
-// Funkcja, nie stała: resolver metadanych Next-a zjada przekazany obiekt,
-// a strona bywa renderowana kilka razy w jednym procesie (gubiła się grafika karty).
+// A function, not a constant: Next's metadata resolver consumes the object passed in,
+// and the page can be rendered several times in one process (the card image got lost).
 export function generateMetadata(): Metadata {
   return pageMetadata({
     title: "Współpraca",
@@ -68,11 +68,10 @@ export default function WspolpracaPage() {
         ))}
       </ul>
 
-      {/* Ściana partnerów — logotypy klikalne, prowadzą na stronę partnera.
-          Wspólne wykończenie (wyszarzenie + mix-blend-multiply, pełny kolor na
-          hover) ujednolica różnorodne źródła: czarne znaki, kolorowy herb i
-          logo na białym tle „rozpływają się" w ciepłym kafelku, a pod kursorem
-          rozświetlają. */}
+      {/* The partners' wall — clickable logos leading to the partner's site. A shared
+          finish (greyscale + mix-blend-multiply, full colour on hover) unifies varied
+          sources: black marks, a coloured crest and a logo on a white background "melt"
+          into the warm tile, and light up under the cursor. */}
       <div className="mt-20 md:mt-28">
         <Reveal>
           <p className="kicker">Partnerzy</p>
@@ -85,10 +84,10 @@ export default function WspolpracaPage() {
           </p>
         </Reveal>
 
-        {/* flex, nie grid — przy liczbie partnerów niepodzielnej przez liczbę kolumn
-            (dziś 5 na 4) siatka zostawiłaby samotny kafelek dociśnięty do lewej;
-            wrap z justify-center domyka ostatni rząd na środku. Szerokości liczone
-            z gapów, żeby rytm był identyczny jak w siatce: 2 kolumny / 4 kolumny. */}
+        {/* flex, not grid — with a number of partners not divisible by the number of
+            columns (5 over 4 today) a grid would leave a lone tile pushed to the left;
+            wrap with justify-center closes the last row in the middle. Widths are computed
+            from the gaps, so the rhythm is identical to a grid: 2 columns / 4 columns. */}
         <ul className="mt-10 flex flex-wrap justify-center gap-4 md:gap-6">
           {PARTNERS.map((partner, index) => (
             <Reveal
@@ -104,11 +103,11 @@ export default function WspolpracaPage() {
                 aria-label={`${partner.name} — otwórz stronę partnera w nowej karcie`}
                 className="group flex h-32 items-center justify-center border border-line bg-paper-warm p-6 transition-all duration-300 hover:border-accent hover:shadow-[0_16px_48px_-16px_color-mix(in_srgb,var(--color-accent)_35%,transparent)] md:h-36"
               >
-                {/* Świadomie zwykły <img>, nie next/image: logotypy to małe pliki
-                    o stałym rozmiarze, wspólnie ostylowane (wyszarzenie +
-                    mix-blend-multiply); optymalizator nic tu nie wnosi, a na
-                    serwerze z jednym rdzeniem kosztuje. Regułę wyciszamy punktowo,
-                    żeby lint świecił na zero i przypadkowy <img> był widoczny. */}
+                {/* Deliberately a plain <img>, not next/image: the logos are small files of
+                    fixed size, styled together (greyscale + mix-blend-multiply); the
+                    optimizer adds nothing here, and on a single-core server it costs.
+                    The rule is silenced locally, so lint shows zero and an accidental
+                    <img> stays visible. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={partner.logo}

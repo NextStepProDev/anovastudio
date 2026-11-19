@@ -1,19 +1,18 @@
 /**
- * Dokłada warianty AVIF i WebP obok każdego JPEG-a w `public/images`.
+ * Adds AVIF and WebP variants next to every JPEG in `public/images`.
  *
- * Zdjęcia hero nie idą przez optymalizator Next-a (art direction wymaga dwóch
- * różnych plików na slajd, a next/image z ukrywaniem przez CSS pobrałby oba
- * kadry), więc formaty przygotowujemy raz, tutaj, i podajemy je w `<picture>`.
+ * The hero photos do not go through Next's optimizer (art direction needs two different
+ * files per slide, and next/image hidden by CSS would download both crops), so the
+ * formats are prepared once, here, and given in `<picture>`.
  *
- * Uruchamiać po WGRANIU NOWYCH ZDJĘĆ, nie w CI — źródła zmieniają się raz na
- * kilka miesięcy, a gotowe warianty leżą w repozytorium obok oryginałów:
+ * Run after ADDING NEW PHOTOS, not in CI — the sources change once every few months, and
+ * the finished variants sit in the repository next to the originals:
  *
  *     cd frontend && npm run images
  *
- * Jakość dobrana pod fotografię ciała: przy AVIF 50 znikała faktura skóry
- * (zdjęcia wyglądały jak wygładzone filtrem), 63 trzyma ją nienaruszoną i nadal
- * schodzi ~6× poniżej JPEG-a. sharp jest zależnością Next-a — nic nie dokładamy
- * do package.json.
+ * Quality tuned for photographs of bodies: at AVIF 50 the skin texture vanished (the
+ * photos looked smoothed by a filter), 63 keeps it intact and still comes out ~6× below
+ * the JPEG. sharp is a dependency of Next — nothing is added to package.json.
  */
 import sharp from "sharp";
 import { readdirSync, statSync } from "node:fs";
