@@ -237,6 +237,7 @@ jobs:
             ["${{ vars.SITE_URL }}/galeria"]=200
             ["${{ vars.SITE_URL }}/wspolpraca"]=200
             ["${{ vars.SITE_URL }}/kontakt"]=200
+            ["${{ vars.SITE_URL }}/polityka-prywatnosci"]=200
             ["${{ vars.STRAPI_URL }}/api/staffs"]=200
             ["${{ vars.STRAPI_URL }}/api/gallery"]="200 404"
           )
