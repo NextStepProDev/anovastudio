@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Image from "next/image";
 import { BRAND, CONTACT } from "@/lib/contact";
 
@@ -68,9 +69,12 @@ export default function Footer() {
       </div>
 
       <div className="relative border-t border-line">
-        <p className="mx-auto max-w-6xl px-5 py-4 text-xs text-ink-muted">
-          © {new Date().getFullYear()} {BRAND}. Wszelkie prawa zastrzeżone.
-        </p>
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-4 text-xs text-ink-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} {BRAND}. Wszelkie prawa zastrzeżone.</p>
+          <Link href="/polityka-prywatnosci" className="underline-offset-4 transition-colors hover:text-ink hover:underline">
+            Polityka prywatności
+          </Link>
+        </div>
       </div>
     </footer>
   );
