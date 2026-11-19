@@ -1,0 +1,25 @@
+name: Comment language
+
+# Every pull request, whatever it touches: the rule covers the whole repo (workflows,
+# deploy scripts, nginx, both apps), and the check takes seconds — no install, no build.
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: The detector's own self-test
+        run: node .github/scripts/comment-language.mjs --self-test
+      - name: All comments in English
+        run: node .github/scripts/comment-language.mjs

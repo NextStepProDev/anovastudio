@@ -1,18 +1,17 @@
 services:
-  # Budżet pamięci: serwer to Oracle E2.1.Micro z 1 GB RAM. Suma limitów
-  # (postgres 192 + strapi 384 + frontend 224 + nginx 64 = 864 MB) zostawia
-  # ~160 MB na system i dockera; resztę dociąża 2 GB swap z setup-swap.sh
-  # (bez niego stack nie wstanie). Suma była tu policzona ze starym limitem
-  # nginx (32 MB) i po jego podbiciu do 64 nikt jej nie poprawił — a to jedna
-  # z niewielu liczb, według których podejmuje się tu decyzje.
+  # Memory budget: the server is an Oracle E2.1.Micro with 1 GB of RAM. The sum of the
+  # limits (postgres 192 + strapi 384 + frontend 224 + nginx 64 = 864 MB) leaves ~160 MB
+  # for the system and docker; the 2 GB swap from setup-swap.sh takes the rest (without
+  # it the stack does not come up). The sum here was once computed with the old nginx
+  # limit (32 MB) and nobody fixed it after the bump to 64 — and it is one of the few
+  # numbers decisions here are made by.
   postgres:
-    # Migracja 16 -> 17 przeprowadzona 07.09.2026 zrzutem i odtworzeniem, nie
-    # podmianą obrazu: Postgres odmawia startu, gdy katalog z danymi założyła
-    # inna wersja główna. Dlatego 17 dostaje WŁASNY wolumen (_v17). Stary
-    # wolumen z 16 był drogą powrotu przez okres karencji i został usunięty
-    # 06.10.2026 — powrotu na 16 już nie ma. Przy następnej wersji głównej
-    # powtórzyć ten schemat: nowy wolumen obok, stary skasować dopiero
-    # po karencji.
+    # The 16 -> 17 migration was done on 07.09.2026 by dump and restore, not by swapping
+    # the image: Postgres refuses to start when the data directory was created by another
+    # major. That is why 17 gets ITS OWN volume (_v17). The old 16 volume was the way back
+    # during the grace period and was removed on 06.10.2026 — there is no way back to 16
+    # any more. For the next major repeat this scheme: a new volume alongside, delete the
+    # old one only after the grace period.
     image: postgres:17-alpine
     container_name: anovastudio-postgres-prod
     mem_limit: 192m
@@ -60,7 +59,7 @@ services:
     mem_limit: 384m
     environment:
       NODE_ENV: production
-      # Trzymaj stertę V8 wyraźnie pod mem_limit — lepszy GC niż OOM-kill
+      # Keep the V8 heap clearly below mem_limit — better GC than an OOM kill
       NODE_OPTIONS: "--max-old-space-size=300"
       DATABASE_CLIENT: postgres
       DATABASE_HOST: postgres
@@ -104,12 +103,12 @@ services:
     container_name: anovastudio-frontend-prod
     mem_limit: 224m
     environment:
-      # Trzymaj stertę V8 wyraźnie pod mem_limit; zapas na sharp (optymalizacja obrazów)
+      # Keep the V8 heap clearly below mem_limit; headroom for sharp (image optimisation)
       NODE_OPTIONS: "--max-old-space-size=160"
     volumes:
-      # Przetworzone zdjęcia z Media Library. Bez tego wolumenu cache ginął razem
-      # z kontenerem, więc po KAŻDYM deployu wszystkie zdjęcia galerii przeliczały
-      # się od zera — sharpem, na jednym rdzeniu i w 224 MB pamięci.
+      # Processed photos from the Media Library. Without this volume the cache died with
+      # the container, so after EVERY deploy all gallery photos were recomputed from zero —
+      # with sharp, on one core and in 224 MB of memory.
       - anovastudio_image_cache_prod:/app/.next/cache
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
@@ -118,10 +117,10 @@ services:
       retries: 5
       start_period: 30s
     depends_on:
-      # service_started, NIE service_healthy: frontend jest napisany tak, żeby
-      # przeżyć niedostępny CMS (lib/strapi.ts zwraca puste dane, strony mają stany
-      # puste). Przy twardym warunku zdrowia awaria Strapi — realna na 1 GB RAM —
-      # kładła całą witrynę zamiast zabrać z niej galerię i zespół.
+      # service_started, NOT service_healthy: the frontend is written to survive an
+      # unavailable CMS (lib/strapi.ts returns empty data, pages have empty states). With a
+      # hard health condition a Strapi failure — real on 1 GB of RAM — took down the whole
+      # site instead of taking the gallery and the team out of it.
       strapi:
         condition: service_started
     restart: unless-stopped
@@ -136,12 +135,12 @@ services:
   nginx:
     image: nginx:1.31-alpine
     container_name: anovastudio-nginx-prod
-    # 32m padało OOM-killem przy wielu równoległych uploadach do Media Library
-    # (27 zdjęć naraz po TLS/HTTP2) — 64m daje zapas na bufory połączeń.
+    # 32m died from the OOM killer on many parallel uploads to the Media Library
+    # (27 photos at once over TLS/HTTP2) — 64m leaves headroom for connection buffers.
     mem_limit: 64m
-    # Tylko IPv4. Bez adresu Docker wystawia porty także na IPv6, a ta droga
-    # omija zaporę originu (deploy/origin-firewall.sh), która filtruje IPv4.
-    # Cloudflare łączy się z serwerem po IPv4 — rekordy domeny to rekordy A.
+    # IPv4 only. Without an address Docker publishes the ports on IPv6 too, and that path
+    # bypasses the origin firewall (deploy/origin-firewall.sh), which filters IPv4.
+    # Cloudflare connects to the server over IPv4 — the domain's records are A records.
     ports:
       - "0.0.0.0:80:80"
       - "0.0.0.0:443:443"

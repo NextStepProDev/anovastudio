@@ -5,7 +5,7 @@ import Reveal from "@/components/Reveal";
 import { OFFER_SERVICES } from "@/lib/offer";
 import type { OfferService } from "@/lib/offer";
 
-/** Zakładki cennika to dwie lokalizacje; wartość „oba" pasuje do obu. */
+/** The price list's tabs are the two locations; the value "oba" matches both. */
 type TabId = "libiaz" | "katowice";
 
 const LOCATIONS: { id: TabId; label: string; locative: string; hint: string }[] =
@@ -17,7 +17,7 @@ const LOCATIONS: { id: TabId; label: string; locative: string; hint: string }[] 
 const gridColsForScopes = (count: number) =>
   count >= 3 ? "sm:grid-cols-2 md:grid-cols-3" : count === 2 ? "sm:grid-cols-2" : "";
 
-/** Chevron sygnalizujący rozwinięcie pozycji. */
+/** A chevron signalling that an item expands. */
 function Chevron({ open }: { open: boolean }) {
   return (
     <svg
@@ -35,7 +35,7 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-/** Lista pozycji zakresu z markerem-kropką (wspólny wzorzec z resztą strony). */
+/** A scope's list of items with a dot marker (a pattern shared with the rest of the site). */
 function ScopeList({ items }: { items: string[] }) {
   return (
     <ul className="mt-3 space-y-1.5 text-sm leading-6 text-ink-soft">
@@ -52,8 +52,8 @@ function ScopeList({ items }: { items: string[] }) {
 }
 
 /**
- * Pojedyncza pozycja menu = rozwijalna „disclosure". Zwinięta pokazuje tylko
- * numer + nazwę + cenę·czas (czysty cennik); klik rozwija lead, zakres i przypis.
+ * A single menu item = an expandable "disclosure". Collapsed, it shows only the number +
+ * name + price·duration (a clean price list); a click expands the lead, scope and note.
  */
 function ServiceRow({ service }: { service: OfferService }) {
   const [open, setOpen] = useState(false);
@@ -75,8 +75,8 @@ function ServiceRow({ service }: { service: OfferService }) {
           aria-controls={panelId}
           className="group flex w-full items-baseline gap-x-4 py-7 text-left sm:gap-x-8 sm:py-10"
         >
-          {/* Mobile: nazwa i cena w osobnych wierszach (długie „Kinesiotaping" nie
-              nachodzi na cenę). sm+: nazwa po lewej, cena po prawej w jednej linii. */}
+          {/* Mobile: name and price on separate rows (the long "Kinesiotaping" does not run
+              into the price). sm+: name on the left, price on the right on one line. */}
           <span className="block min-w-0 flex-1 sm:flex sm:items-baseline sm:justify-between sm:gap-6">
             <span className="block break-words font-display text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
               {service.name}
@@ -93,12 +93,12 @@ function ServiceRow({ service }: { service: OfferService }) {
         </button>
       </h2>
 
-      {/* Panel siedzi w drzewie ZAWSZE, zwinięty chowa go atrybut `hidden` — nie
-          warunek `&&`. Renderowanie warunkowe znaczyło, że opis usługi, listy
-          dolegliwości i przypis w ogóle nie trafiały do kodu strony: robot Google
-          nie klika w rozwijane elementy, więc najbogatsza w słowa kluczowe treść
-          całego serwisu była dla wyszukiwarki niewidzialna. Przy okazji działa
-          Ctrl+F i `aria-controls` wskazuje na istniejący element. */}
+      {/* The panel is ALWAYS in the tree; collapsed, it is hidden by the `hidden`
+          attribute — not an `&&` condition. Conditional rendering meant the service
+          description, the lists of complaints and the note never reached the page's
+          markup at all: Googlebot does not click disclosures, so the most keyword-rich
+          content of the whole site was invisible to the search engine. As a bonus Ctrl+F
+          works and `aria-controls` points at an existing element. */}
       <div id={panelId} hidden={!open} className="pb-10 sm:pb-12">
         <p className="max-w-2xl text-sm leading-7 text-ink-soft md:text-base">
           {service.lead}
@@ -126,10 +126,10 @@ function ServiceRow({ service }: { service: OfferService }) {
 }
 
 /**
- * „Menu zabiegów" — redakcyjna, rozwijalna lista usług (bez kart, zdjęć i ikon).
- * Zakładki wybierają lokalizację; usługa trafia do zakładki, gdy jej `location`
- * = ta zakładka lub „oba". Treść pochodzi z `lib/offer.ts` (na sztywno).
- * Wszystkie pozycje domyślnie zwinięte.
+ * The "treatment menu" — an editorial, expandable list of services (no cards, photos or
+ * icons). The tabs choose the location; a service goes into a tab when its `location` =
+ * that tab or "oba". The content comes from `lib/offer.ts` (hardcoded).
+ * All items collapsed by default.
  */
 export default function OfferMenu() {
   const [active, setActive] = useState<TabId>("libiaz");
@@ -141,11 +141,11 @@ export default function OfferMenu() {
 
   return (
     <div className="mt-12">
-      {/* Świadomie zwykłe przyciski z `aria-pressed`, a NIE role="tab": pełny wzorzec
-          zakładek ARIA wymaga panelu z role="tabpanel", `aria-controls` i obsługi
-          strzałek. Wcześniej były tu same role bez tych zachowań, więc czytnik ekranu
-          zapowiadał „zakładka 1 z 2" i obiecywał sterowanie, którego nie ma. Dwa
-          przyciski-przełączniki opisują to, czym te kafelki naprawdę są: filtrem. */}
+      {/* Deliberately plain buttons with `aria-pressed`, NOT role="tab": the full ARIA tabs
+          pattern needs a panel with role="tabpanel", `aria-controls` and arrow-key handling.
+          Before, there were bare roles without those behaviours, so a screen reader
+          announced "tab 1 of 2" and promised control that was not there. Two toggle
+          buttons describe what these tiles really are: a filter. */}
       <div role="group" aria-label="Lokalizacja" className="grid gap-4 sm:grid-cols-2">
         {LOCATIONS.map((loc) => {
           const selected = active === loc.id;
@@ -180,8 +180,8 @@ export default function OfferMenu() {
           informacji.
         </p>
       ) : (
-        // key={active} celowo: przełączenie zakładki remountuje listę, dzięki
-        // czemu Reveal odpala animację wejścia od nowa dla nowego zestawu pozycji.
+        // key={active} on purpose: switching the tab remounts the list, so Reveal plays
+        // the entrance animation again for the new set of items.
         <div key={active} className="mt-10 border-b border-line">
           {filtered.map((service, index) => (
             <Reveal key={service.slug} delay={index * 0.06}>

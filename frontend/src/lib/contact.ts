@@ -1,7 +1,7 @@
-/** Nazwa marki — każde użycie nazwy w serwisie musi iść przez tę stałą */
+/** The brand name — every use of the name on the site must go through this constant */
 export const BRAND = "Anova Studio";
 
-/** Bazowy URL serwisu (sitemap, robots, canonical). Domena docelowa: anovastudio.pl — ustawić NEXT_PUBLIC_SITE_URL w env produkcyjnym */
+/** The site's base URL (sitemap, robots, canonical). Target domain: anovastudio.pl — set NEXT_PUBLIC_SITE_URL in the production env */
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -13,7 +13,7 @@ export const CONTACT = {
   addressCity: "32-590 Libiąż",
   /** Google Calendar Appointment Schedule link — waiting for the client to provide it */
   bookingUrl: null as string | null,
-  /** Profile społecznościowe. Renderowane tylko gdy != null (wzorzec jak bookingUrl). */
+  /** Social profiles. Rendered only when != null (the same pattern as bookingUrl). */
   facebook: "https://www.facebook.com/gabinetfizjoterapiimasazeLibiaz" as string | null,
   instagram: "https://www.instagram.com/anova_studio_" as string | null,
   mapsEmbedUrl:

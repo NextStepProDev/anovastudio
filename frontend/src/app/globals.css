@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Tło body = główny krem (--color-paper), spójne we WSZYSTKICH zakładkach i pod belką. */
+  /* The body background = the main cream (--color-paper), consistent on ALL tabs and under the bar. */
   --background: #f5f0e8;
   --foreground: #2b241c;
 }
@@ -10,27 +10,27 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Brand: jasna, kremowo-beżowa paleta zainspirowana logiem Anova (folder
-     „inspiracje kolorystyka loga"). Cała strona operuje TRZEMA odcieniami beżu —
-     światło buduje głębię, nie ciemne sekcje. Akcent (bursztyn) pozostaje. */
+  /* Brand: a light, cream-and-beige palette inspired by the Anova logo (the folder
+     "inspiracje kolorystyka loga"). The whole site works with THREE shades of beige —
+     light builds the depth, not dark sections. The accent (amber) stays. */
   --color-ink: #2b241c;
   --color-ink-soft: #5c5246;
-  /* Tier „meta": etykiety pól, czas trwania zabiegu, podpis w stopce. Nosi WYŁĄCZNIE
-     drobny tekst, więc musi spełniać próg WCAG AA (4.5:1) — poprzednie #94897a dawało
-     3,0:1 na kremie i 2,6:1 na ciepłym beżu, czyli stopka z copyrightem i etykiety na
-     Kontakcie były poniżej progu czytelności. Ta wartość trzyma 5,4:1 na `paper`
-     i 4,6:1 na `paper-warm` (mierzone skryptem, nie na oko). */
+  /* The "meta" tier: field labels, treatment duration, the footer caption. It carries ONLY
+     small text, so it must meet the WCAG AA threshold (4.5:1) — the previous #94897a gave
+     3.0:1 on cream and 2.6:1 on warm beige, i.e. the footer with the copyright and the
+     labels on Kontakt were below the readability threshold. This value holds 5.4:1 on
+     `paper` and 4.6:1 on `paper-warm` (measured by a script, not by eye). */
   --color-ink-muted: #6b6154;
-  /* Trzy powierzchnie (od najjaśniejszej): krem → ciepły beż → głębszy greige. */
+  /* Three surfaces (from the lightest): cream → warm beige → a deeper greige. */
   --color-paper: #f5f0e8;
   --color-paper-warm: #e8dfd2;
   --color-sand: #dccbb6;
   --color-line: #d7c9bb;
-  /* Bursztyn marki. Odcień przyciemniony z #9c6b33, bo tamten dawał 4,05:1 na kremie
-     i 3,5:1 na ciepłym beżu — poniżej progu AA, a niesie DROBNY tekst: kickery, cenę
-     w cenniku, stanowisko w Zespole, „Czytaj więcej", numerację na Współpracy. Teraz
-     5,3:1 na `paper` i 4,6:1 na `paper-warm`. Do dekoracji (kropki list, poświaty,
-     obramowania) odcień jest bez znaczenia — próg dotyczy tekstu. */
+  /* The brand amber. A shade darkened from #9c6b33, because that one gave 4.05:1 on cream
+     and 3.5:1 on warm beige — below the AA threshold, and it carries SMALL text: kickers,
+     the price in the price list, the role in Zespół, "Czytaj więcej", the numbering on
+     Współpraca. Now 5.3:1 on `paper` and 4.6:1 on `paper-warm`. For decoration (list
+     dots, glows, borders) the shade does not matter — the threshold applies to text. */
   --color-accent: #86592c;
   --color-accent-dark: #7f5527;
   --color-glow: #e9c795;
@@ -109,7 +109,7 @@ button:not(:disabled),
     @apply inline-flex h-12 items-center justify-center gap-2.5 px-8 font-display text-sm font-semibold tracking-wide transition-all duration-200 active:translate-y-px;
   }
   .btn-primary {
-    /* Główny „ciemny akcent" — grafitowy CTA jak czarne litery w logu, na kremowym tle. */
+    /* The main "dark accent" — a graphite CTA like the black letters in the logo, on a cream background. */
     @apply bg-ink text-paper hover:bg-ink-soft;
     box-shadow: 0 12px 26px -16px rgb(0 0 0 / 0.45);
   }
@@ -119,8 +119,8 @@ button:not(:disabled),
 }
 
 @layer utilities {
-  /* Zaokrąglony kadr zdjęcia (wszystkie 4 rogi). Świadomie NIE łuk / rounded-t-full —
-     łuki zostały odrzucone jako „nagrobki". Wspólny promień dla hero / Zespołu / Galerii. */
+  /* A rounded photo frame (all 4 corners). Deliberately NOT an arch / rounded-t-full —
+     arches were rejected as "tombstones". A shared radius for hero / Zespół / Galeria. */
   .photo-frame {
     border-radius: 1.75rem;
     overflow: hidden;

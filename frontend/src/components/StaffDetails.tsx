@@ -26,11 +26,11 @@ export default function StaffDetails({
 
   const courseList = parseCourses(courses);
 
-  // Mierzymy WYŁĄCZNIE w stanie zwiniętym. Rozwinięty akapit z definicji nie jest
-  // przycięty, więc pomiar po rozwinięciu zwracał `false` i — u osoby bez wpisanych
-  // kursów — zabierał jedyny powód istnienia przycisku: „Zwiń" znikał, a karta
-  // zostawała rozwinięta na stałe. Pominięcie pomiaru zachowuje ostatni wynik
-  // z pomiaru zwiniętego, czyli tę informację, której naprawdę potrzebujemy.
+  // We measure ONLY in the collapsed state. An expanded paragraph is by definition not
+  // clamped, so measuring after expanding returned `false` and — for a person with no
+  // courses entered — took away the button's only reason to exist: "Zwiń" vanished and
+  // the card stayed expanded for good. Skipping the measurement keeps the last result from
+  // the collapsed measurement, i.e. exactly the information we need.
   useEffect(() => {
     const el = paragraphRef.current;
     if (!el || expanded) return;
@@ -76,9 +76,9 @@ export default function StaffDetails({
             Kursy i szkolenia
           </p>
           <ul className="mt-2 space-y-1 text-sm leading-6 text-ink-soft">
-            {/* klucz z indeksem: lista bywa długa (kilkadziesiąt pozycji) i wpisywana
-                ręcznie w CMS-ie, więc powtórzona linia jest realna; kolejność jest
-                stała, bo to zwykły tekst rozbity na wiersze */}
+            {/* key with the index: the list can be long (dozens of items) and is typed by
+                hand in the CMS, so a repeated line is real; the order is stable, because
+                it is plain text split into lines */}
             {courseList.map((course, index) => (
               <li
                 key={`${index}-${course}`}

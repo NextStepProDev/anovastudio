@@ -38,28 +38,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          # Musi zgadzać się z `FROM node:<wersja>-alpine` w backend/Dockerfile.
-          # Dependabot podbija tylko tam (ekosystem docker czyta Dockerfile'e),
-          # tej liczby nie rusza nikt — po bumpie 24 → 26 w #30 CI został na
-          # 24 i przez chwilę testował kod na innej wersji, niż obsługuje
-          # produkcję. Przy następnym majorze Node zmienić OBA miejsca naraz.
+          # Must match `FROM node:<version>-alpine` in backend/Dockerfile.
+          # Dependabot bumps only that one (the docker ecosystem reads Dockerfiles)
+          # and nobody touches this number — after the 24 → 26 bump in #30 CI stayed
+          # on 24 and for a while tested the code on a different version than
+          # production runs. On the next Node major change BOTH places at once.
           node-version: 26
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
-      # Informacyjnie — i tu, w odróżnieniu od frontendu, musi takie zostać.
-      # Zawężone do zależności produkcyjnych zostają DWA zgłoszenia „high":
-      # `js-yaml` (poprawka tylko w 5.x, bez backportu do 4.x) i `vite`
-      # (poprawka od 6.4.3 w górę). Oba siedzą w drzewie samego Strapiego —
-      # wymuszenie majora przez `overrides` łamie budowanie panelu admina,
-      # więc znikną dopiero z podbiciem @strapi/strapi. Reszta, którą DAŁO się
-      # domknąć bez majora, jest już domknięta w `overrides` w package.json.
-      # ⚠️ Te overrides trzeba rewidować: przypinały `^3.1.4` i `^5.0.8`, czyli
-      # wersje, które same zdążyły stać się podatne, i audyt cicho świecił na
-      # czerwono mimo „załatanego" pliku.
-      - name: npm audit (produkcyjne, high+)
-        run: npm audit --omit=dev --audit-level=high
-        continue-on-error: true
+      # BLOCKING since 2026-11-19 (audit). Until then it ran with continue-on-error
+      # "because Strapi's own tree always has something", and so guarded nothing:
+      # 30 high advisories piled up, most of them fixable by a Strapi patch release.
+      # scripts/audit-gate.mjs fails on any high/critical in production
+      # dependencies except the advisories it lists with a reason (and fails on an
+      # entry that no longer matches, so an exception cannot outlive its cause).
+      # ⚠️ The `overrides` in package.json need revisiting on every Strapi bump:
+      # they once pinned `^3.1.4` and `^5.0.8`, versions that had become
+      # vulnerable themselves, while the file looked "patched".
+      - name: npm audit (production, high+, with listed exceptions)
+        run: npm run audit
       - run: npm run build
 
   docker:
@@ -97,15 +95,16 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      # Skan CVE w warstwie systemowej obrazu (czego npm audit nie widzi).
-      # Informacyjnie na razie (exit-code 0 = nie blokuje deployu). ignore-unfixed
-      # ucina szum z podatności bez łatki; zostają te naprawialne bumpem bazy.
-      # Gdy wyniki będą czyste, ustaw exit-code na 1, by high/critical wywalały build.
+      # CVE scan of the image's system layer (what npm audit does not see).
+      # Informational for now (exit-code 0 = does not block the deploy). ignore-unfixed
+      # cuts the noise of vulnerabilities without a patch; what stays can be fixed by
+      # bumping the base image. Once the results are clean, set exit-code to 1 so
+      # high/critical fail the build.
       - name: Trivy image scan (high+)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          # Nazwa obrazu musi być lowercase (owner NextStepProDev ma wielkie litery,
-          # a OCI reference wymaga małych — metadata-action lowercase'uje sam przy pushu).
+          # The image name must be lowercase (the owner NextStepProDev has capitals, and an
+          # OCI reference requires lowercase — metadata-action lowercases on push by itself).
           image-ref: ghcr.io/nextstepprodev/anovastudio-backend:${{ steps.version.outputs.version }}
           format: table
           severity: HIGH,CRITICAL

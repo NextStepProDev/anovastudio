@@ -5,8 +5,8 @@ import { BRAND } from "@/lib/contact";
 import { pageMetadata } from "@/lib/seo";
 import Reveal from "@/components/Reveal";
 
-// Funkcja, nie stała: resolver metadanych Next-a zjada przekazany obiekt,
-// a strona bywa renderowana kilka razy w jednym procesie (gubiła się grafika karty).
+// A function, not a constant: Next's metadata resolver consumes the object passed in,
+// and the page can be rendered several times in one process (the card image got lost).
 export function generateMetadata(): Metadata {
   return pageMetadata({
     title: "Galeria",
@@ -52,13 +52,14 @@ export default async function GaleriaPage() {
                 >
                   <Image
                     src={strapiMediaUrl(format.url)}
-                    // Opis z Media Library, a gdy go brak — opis zastępczy z numerem.
-                    // `alt=""` znaczy „obrazek czysto dekoracyjny, pomiń": czytnik
-                    // ekranu przechodził nad CAŁĄ galerią bez słowa, a dla wyszukiwarki
-                    // 27 zdjęć gabinetu nie niosło żadnej treści. Numer w opisie jest
-                    // celowy — 27 identycznych zdań brzmi w czytniku jak zacięta płyta.
-                    // Docelowo pole `alternativeText` uzupełnia się w panelu Strapi
-                    // i wtedy ten zapas nie jest używany.
+                    // The description from the Media Library, and when it is missing — a
+                    // fallback description with a number. `alt=""` means "a purely
+                    // decorative image, skip it": a screen reader passed over the WHOLE
+                    // gallery without a word, and for the search engine 27 photos of the
+                    // clinic carried no content. The number in the description is
+                    // deliberate — 27 identical sentences sound like a stuck record in a
+                    // screen reader. Eventually the `alternativeText` field is filled in the
+                    // Strapi panel and then this fallback is not used.
                     alt={
                       photo.alternativeText?.trim() ||
                       `Wnętrze gabinetu ${BRAND} w Libiążu — zdjęcie ${index + 1} z ${photos.length}`

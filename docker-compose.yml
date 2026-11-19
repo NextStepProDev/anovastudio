@@ -1,9 +1,9 @@
 services:
   postgres:
-    # Trzyma się tej samej wersji głównej co produkcja (patrz deploy/docker-
-    # compose.prod.yml). Rozjazd tutaj to testowanie na innym silniku bazy.
-    # Lokalna baza jest odtwarzalna, więc przy zmianie majora wystarczy
-    # `docker compose down -v` i start od nowa.
+    # Stays on the same major as production (see deploy/docker-compose.prod.yml).
+    # A mismatch here means testing on a different database engine. The local
+    # database is reproducible, so on a major change `docker compose down -v` and
+    # starting over is enough.
     image: postgres:17-alpine
     container_name: anovastudio-postgres
     restart: unless-stopped

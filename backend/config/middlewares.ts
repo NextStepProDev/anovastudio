@@ -4,10 +4,10 @@ const config: Core.Config.Middlewares = [
   'strapi::logger',
   'strapi::errors',
   'strapi::security',
-  // CORS zawężony do domen produkcyjnych + localhost do developmentu. Frontend
-  // konsumuje API po stronie serwera (server components / optymalizator obrazów),
-  // więc zawężenie nie dotyka renderu strony — chroni tylko przed cross-origin
-  // wywołaniami z przeglądarki. Nadpisywalne przez CORS_ORIGINS (lista po przecinku).
+  // CORS narrowed to the production domains + localhost for development. The frontend
+  // consumes the API on the server side (server components / the image optimizer), so
+  // the narrowing does not touch page rendering — it only protects against cross-origin
+  // calls from a browser. Overridable with CORS_ORIGINS (comma-separated).
   {
     name: 'strapi::cors',
     config: {
@@ -16,7 +16,7 @@ const config: Core.Config.Middlewares = [
         .map((o) => o.trim()),
     },
   },
-  // 'strapi::poweredBy' usunięty celowo — nie ujawniamy X-Powered-By: Strapi.
+  // 'strapi::poweredBy' removed on purpose — we do not reveal X-Powered-By: Strapi.
   'strapi::query',
   'strapi::body',
   'strapi::session',

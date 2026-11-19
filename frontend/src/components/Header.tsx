@@ -19,8 +19,8 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // Escape zamyka menu mobilne. Kliknięcie w link zamyka je samo (onClick niżej),
-  // ale bez tego jedynym wyjściem dla klawiatury było przejście przez całą listę.
+  // Escape closes the mobile menu. A click on a link closes it by itself (onClick below),
+  // but without this the keyboard's only way out was tabbing through the whole list.
   useEffect(() => {
     if (!menuOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -59,8 +59,8 @@ export default function Header() {
             <Link
               key={href}
               href={href}
-              // aria-current: aktywna pozycja była do tej pory oznaczona samym
-              // kolorem, więc czytnik ekranu nie miał skąd wiedzieć, gdzie jesteśmy
+              // aria-current: the active item used to be marked by colour alone, so a
+              // screen reader had no way of knowing where we are
               aria-current={pathname === href ? "page" : undefined}
               className={`relative font-display text-base tracking-wide transition-colors after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:bg-accent after:transition-transform after:duration-300 hover:text-ink hover:after:scale-x-100 ${
                 pathname === href

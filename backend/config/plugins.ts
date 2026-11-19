@@ -44,9 +44,9 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
   upload: {
     config: {
       sizeLimit: 25 * 1024 * 1024,
-      // Tylko jeden wariant responsywny (frontend używa formats.medium, a next/image
-      // i tak skaluje w locie). Domyślne 3 breakpointy potrafiły mielić sharpem
-      // >60 s/zdjęcie na 1 OCPU i uploady padały timeoutem.
+      // Only one responsive variant (the frontend uses formats.medium, and next/image
+      // scales on the fly anyway). The default 3 breakpoints could grind >60 s per photo
+      // with sharp on 1 OCPU and uploads died on a timeout.
       breakpoints: {
         medium: 750,
       },

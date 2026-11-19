@@ -3,8 +3,8 @@ import Reveal from "@/components/Reveal";
 import Watermark from "@/components/Watermark";
 import HeroCarousel, { type HeroSlide } from "@/components/HeroCarousel";
 
-// Art direction: desktop = kadry poziome (jak wcześniej), mobile = kadry pionowe
-// (IMG_4670 fizjoterapia / IMG_4640 masaż / IMG_4600 trening).
+// Art direction: desktop = landscape crops (as before), mobile = portrait crops
+// (IMG_4670 physiotherapy / IMG_4640 massage / IMG_4600 training).
 const heroSlides: HeroSlide[] = [
   {
     kind: "brand",
@@ -27,13 +27,13 @@ const heroSlides: HeroSlide[] = [
   },
 ];
 
-// Teaser oferty pod hero — świadomie osobny od OFFER_SERVICES (`lib/offer.ts`).
-// Cennik grupuje po USŁUDZE (Fizjoterapia z zakresami ortopedyczna/sportowa/
-// stomatologiczna), a ten pasek mówi językiem pacjenta, który szuka swojej
-// dolegliwości, nie pozycji cennika — dlatego zakresy stoją tu jako osobne hasła.
-// ⚠️ Rozjazd już raz kosztował: fizjoterapia stomatologiczna weszła do cennika
-// i przez trzy tygodnie nie istniała na stronie głównej, mimo że trafiała do
-// JSON-LD. Dodając albo zmieniając cokolwiek w OFFER_SERVICES, przejrzyj tę listę.
+// The offer teaser under the hero — deliberately separate from OFFER_SERVICES (`lib/offer.ts`).
+// The price list groups by SERVICE (Physiotherapy with orthopedic/sports/dental scopes),
+// while this strip speaks the language of a patient looking for their complaint, not for
+// a price-list item — hence the scopes stand here as separate keywords.
+// ⚠️ A mismatch has cost once already: dental physiotherapy entered the price list and for
+// three weeks did not exist on the home page, although it reached the JSON-LD. When adding
+// or changing anything in OFFER_SERVICES, review this list.
 const services = [
   "Fizjoterapia ortopedyczna",
   "Fizjoterapia sportowa",
@@ -47,22 +47,22 @@ const services = [
 export default function Home() {
   return (
     <>
-      {/* Hero full-bleed — zdjęcie wypełnia całą sekcję i „napiera" na tekst, gradient
-          trzyma napisy czytelne. Responsywnie:
-          • mobile: układ pionowy — zdjęcie u góry, tekst zakotwiczony na dole na kremowej
-            półce (gradient od dołu),
-          • desktop: tekst po lewej na gradiencie poziomym, zdjęcie odsłonięte po prawej. */}
+      {/* A full-bleed hero — the photo fills the whole section and "presses" on the text,
+          the gradient keeps the text readable. Responsively:
+          • mobile: a vertical layout — the photo on top, the text anchored at the bottom on
+            a cream shelf (gradient from the bottom),
+          • desktop: the text on the left over a horizontal gradient, the photo revealed on the right. */}
       <section className="relative flex min-h-[calc(100svh-82px)] items-end overflow-hidden bg-paper md:items-center">
-        {/* Welon pod tekstem żyje teraz w karuzeli (per slajd) — plansza brandowa go
-            nie dostaje, bo jest kremowa i tylko zjadałby logo. Patrz `PhotoVeil`. */}
+        {/* The veil under the text now lives in the carousel (per slide) — the brand card
+            does not get it, because it is cream and the veil would only eat the logo. See `PhotoVeil`. */}
         <div aria-hidden className="absolute inset-0">
           <HeroCarousel slides={heroSlides} />
         </div>
 
         <div className="relative mx-auto w-full max-w-6xl px-5 py-12 md:py-12">
           <Reveal className="max-w-xl">
-            {/* Kicker tylko na desktopie — na kremowej lewej stronie wygląda pięknie,
-                a na mobile nad zdjęciem tracił czytelność. Treść i tak jest w logu. */}
+            {/* The kicker on desktop only — on the cream left side it looks lovely, while on
+                mobile, above the photo, it lost readability. The content is in the logo anyway. */}
             <p className="kicker hidden md:flex">Fizjoterapia · Masaż · Trening</p>
             <h1 className="font-display text-4xl font-semibold leading-tight tracking-tight md:mt-4 md:text-6xl">
               Odzyskaj swobodę.
@@ -87,8 +87,8 @@ export default function Home() {
 
       <section className="border-y border-line bg-paper-warm">
         <Reveal delay={0.1}>
-          {/* Liczba kolumn idzie za długością listy: przy siedmiu hasłach siatka
-              sześciokolumnowa zostawiała ostatnie samo w drugim rzędzie. */}
+          {/* The number of columns follows the length of the list: with seven keywords a
+              six-column grid left the last one alone in a second row. */}
           <ul className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-4 px-5 py-10 sm:grid-cols-4 md:grid-cols-7 md:divide-x md:divide-line">
             {services.map((service) => (
               <li
@@ -102,8 +102,8 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* Manifest — emocjonalny rdzeń strony (copy Ani). Każda linia w osobnym Reveal,
-          żeby odsłaniała się dopiero gdy sama wjedzie w widok (kaskada przy scrollu). */}
+      {/* The manifesto — the emotional core of the page (Ania's copy). Each line in its own
+          Reveal, so it reveals only when it scrolls into view itself (a cascade on scroll). */}
       <section className="bg-paper">
         <div className="mx-auto max-w-2xl px-5 py-20 md:py-28">
           <Reveal>
@@ -112,8 +112,8 @@ export default function Home() {
               Każde ciało ma swoją historię.
             </h2>
           </Reveal>
-          {/* Refleksyjny passus w kursywie serifu (Fraunces) — wyróżnia go „literacko"
-              bez łamania spójności typografii. */}
+          {/* A reflective passage in serif italics (Fraunces) — it sets it apart "literarily"
+              without breaking the consistency of the typography. */}
           <div className="mt-6 space-y-2 font-display text-xl italic leading-relaxed text-ink-soft md:text-2xl">
             <Reveal>
               <p>Czasem jest nią kontuzja.</p>
@@ -142,10 +142,10 @@ export default function Home() {
 
       {/* Cytat-przerywnik. */}
       <section className="relative isolate border-y border-line bg-paper-warm">
-        {/* tylko desktop — na mobile sekcje stackują się w pionie i ten graver
-            lądował bezpośrednio nad graverem sekcji CTA (dwa znaki jeden nad drugim) */}
-        {/* własne id filtra — na tej stronie są DWA znaki wodne (drugi w sekcji
-            CTA niżej), a domyślne id dałoby zduplikowany id w dokumencie */}
+        {/* desktop only — on mobile the sections stack vertically and this graver landed
+            directly above the CTA section's graver (two marks one above the other) */}
+        {/* its own filter id — this page has TWO watermarks (the second in the CTA section
+            below), and the default id would give a duplicate id in the document */}
         <Watermark
           id="anova-emboss-quote"
           surface="paperWarm"
@@ -158,7 +158,7 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* Sekcja domykająca z CTA (copy Ani). */}
+      {/* The closing section with the CTA (Ania's copy). */}
       <section className="relative isolate bg-paper">
         <Watermark
           id="anova-emboss-cta"
