@@ -20,11 +20,6 @@ const ACCEPTED = {
   // `SessionOptions.parse(options)`) — never request data. The fix exists only in zod 4,
   // a major those packages do not accept. Remove when `npm ls zod` shows no 3.x.
   'GHSA-mrhx-c7xc-m3w5': 'zod 3 — only koa-body/koa-session options, never request data',
-  // vite ≤ 6.4.3 (launch-editor): an existence check bypassable on Windows. vite here
-  // serves only `strapi develop` on a developer machine; production runs `strapi start`
-  // on Linux and never starts a vite server. Remove when `npm ls vite` shows ≥ 6.4.4
-  // everywhere (a Strapi bump).
-  'GHSA-587h-7wmj-h5pm': 'vite — dev server only, never runs in production',
 }
 
 const BLOCKING = new Set(['high', 'critical'])
