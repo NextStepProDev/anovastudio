@@ -3,12 +3,20 @@ version: 2
 # sit above minor-and-patch (Dependabot puts an update into the first group that matches).
 # Without them a coupled update arrives as several PRs that each fail on their own — in
 # next-step-pro-climbing on 2026-11-19 react-i18next 18 needed i18next 27, and each PR was red.
+#
+# Every Monday at 06:00 Warsaw time, the same slot in all of the owner's projects, so the week's
+# dependency PRs from every repo land together and get cleared in one sitting. `time` is not
+# decoration: without it Dependabot picks a random hour per repo. Fresh releases wait out
+# Dependabot's default 3-day cooldown (security updates do not).
 updates:
   # Frontend (Next.js)
   - package-ecosystem: npm
     directory: /frontend
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
     open-pull-requests-limit: 5
     ignore:
       # ESLint must stay on 9.x. `eslint-config-next` declares the peer `eslint >=9`, so npm
@@ -34,7 +42,10 @@ updates:
   - package-ecosystem: npm
     directory: /backend
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
     open-pull-requests-limit: 5
     ignore:
       # TypeScript must stay on 5.x — that is what Strapi itself uses (@strapi/strapi depends
@@ -67,17 +78,43 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    # One PR for all actions, as in the other projects — weekly, ungrouped, every action bump
+    # would be a PR of its own.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   # Base images in the Dockerfiles
+  # Both run on `node:26-alpine`, a floating tag that already picks up every 26.x on rebuild, so
+  # the only PR Dependabot could open here is a jump to the next major. Odd Node majors (27, 29)
+  # never get LTS and die after about seven months, and the PR would bump only the Dockerfile,
+  # leaving `node-version: 26` in ci-frontend.yml and ci-backend.yml behind. Changing the Node
+  # line is a decision: both Dockerfiles and both workflows together.
   - package-ecosystem: docker
     directory: /frontend
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker
     directory: /backend
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
 
   # Images in the compose files — postgres and nginx. These are DELIBERATELY separate
   # entries: the `docker` ecosystem above reads only Dockerfiles, and compose files are
@@ -95,14 +132,20 @@ updates:
   - package-ecosystem: docker-compose
     directory: /
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
     ignore:
       - dependency-name: postgres
         update-types: ["version-update:semver-major"]
   - package-ecosystem: docker-compose
     directory: /deploy
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Warsaw
     ignore:
       - dependency-name: postgres
         update-types: ["version-update:semver-major"]
